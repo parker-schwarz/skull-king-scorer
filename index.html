@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0c0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skull King">
+<title>Skull King Scorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d1a;--bg2:#13152a;--bg3:#1c1f3a;--bg4:#242748;
+  --gold:#d4a017;--gold-light:#f0c040;--gold-dim:rgba(212,160,23,.14);--gold-border:rgba(212,160,23,.32);
+  --parchment:#f5e6c8;--ink:#1a0f05;
+  --red:#c0392b;--green:#27ae60;
+  --text:#e2d5bc;--text2:#9a8a6a;--text3:#4a4468;
+  --radius:18px;--radius-sm:12px;
+  --f-title:'Fraunces',Georgia,serif;
+  --f-ui:'Manrope',system-ui,sans-serif;
+}
+html,body{height:100%;background:var(--bg);overflow:hidden;-webkit-tap-highlight-color:transparent}
+#root{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;font-family:var(--f-ui);color:var(--text);position:relative;overflow:hidden}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:10px;padding:13px 18px 10px;background:var(--bg2);border-bottom:1px solid var(--gold-border);flex-shrink:0}
+.hdr-title{font-family:var(--f-title);font-style:italic;font-weight:400;font-size:20px;color:var(--gold-light);letter-spacing:-.02em;flex:1}
+.hdr-code{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--text2);background:var(--bg3);border:1px solid var(--gold-border);border-radius:6px;padding:4px 8px}
+.hdr-btns{display:flex;gap:6px}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:19px;padding:4px 5px;border-radius:8px;color:var(--text2);transition:background .18s}
+.icon-btn:hover{background:var(--bg3)}
+
+/* SCREENS */
+.scr{flex:1;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 22px;border-radius:999px;font-family:var(--f-ui);font-size:16px;font-weight:600;cursor:pointer;border:none;transition:transform .18s,box-shadow .18s,opacity .18s;width:100%}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-gold{background:var(--gold);color:var(--ink);box-shadow:0 4px 20px rgba(212,160,23,.32)}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid rgba(255,255,255,.18)}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--gold-border)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:10px 18px;font-size:14px;border-radius:10px;width:auto}
+
+/* INPUTS */
+.inp-wrap{display:flex;flex-direction:column;gap:6px}
+.inp-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text2)}
+.inp{background:var(--bg3);border:1.5px solid var(--gold-border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--f-ui);font-size:17px;font-weight:500;padding:13px 15px;outline:none;transition:border-color .18s;width:100%}
+.inp:focus{border-color:var(--gold)}
+.inp::placeholder{color:var(--text3)}
+.inp-code{text-transform:uppercase;letter-spacing:.18em;text-align:center;font-size:22px}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--gold-border);border-radius:var(--radius);padding:18px}
+
+/* TOGGLE */
+.tog-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:13px 15px;gap:12px}
+.tog-info{display:flex;flex-direction:column;gap:3px}
+.tog-lbl{font-size:15px;font-weight:600}
+.tog-sub{font-size:12px;color:var(--text2)}
+.tog{position:relative;width:44px;height:26px;background:var(--bg4);border-radius:13px;border:1px solid var(--gold-border);cursor:pointer;transition:background .18s;flex-shrink:0}
+.tog.on{background:var(--gold)}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .18s}
+.tog.on::after{transform:translateX(18px)}
+
+/* HOME */
+.home-bg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;background:radial-gradient(ellipse at 50% 30%,#1e2040,var(--bg) 70%)}
+.skull-em{font-size:80px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 0 22px rgba(212,160,23,.6));animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 18px rgba(212,160,23,.5))}50%{filter:drop-shadow(0 0 36px rgba(212,160,23,.9))}}
+.home-title{font-family:var(--f-title);font-style:italic;font-weight:600;font-size:44px;color:var(--gold-light);letter-spacing:-.03em;line-height:1;text-shadow:0 2px 18px rgba(212,160,23,.4)}
+.home-sub{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--text2);margin-bottom:44px;margin-top:5px}
+.home-btns{display:flex;flex-direction:column;gap:13px;width:100%}
+.fb-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);margin-top:26px;cursor:pointer;border-radius:8px;padding:4px}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(39,174,96,.22);animation:pulse 2.2s ease-in-out infinite;flex-shrink:0}
+.fb-dot.off{background:var(--text3);box-shadow:none;animation:none}
+@keyframes pulse{50%{opacity:.44}}
+
+/* SETUP */
+.setup-scr{padding:26px 22px;gap:22px;display:flex;flex-direction:column}
+.setup-title{font-family:var(--f-title);font-style:italic;font-weight:400;font-size:32px;color:var(--gold-light);letter-spacing:-.02em}
+.setup-form{display:flex;flex-direction:column;gap:16px}
+.back-btn{background:none;border:none;color:var(--text2);font-family:var(--f-ui);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0;margin-bottom:6px}
+.back-btn:hover{color:var(--text)}
+.info-banner{background:var(--bg3);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.55}
+.info-banner strong{color:var(--text)}
+
+/* LOBBY */
+.lobby-scr{padding:22px;display:flex;flex-direction:column;gap:18px}
+.code-disp{background:var(--bg3);border:2px solid var(--gold-border);border-radius:var(--radius);padding:22px;text-align:center;cursor:pointer}
+.code-lbl{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--text2);margin-bottom:7px}
+.code-val{font-family:var(--f-title);font-size:48px;font-weight:600;color:var(--gold-light);letter-spacing:.15em;line-height:1}
+.code-sub{font-size:12px;color:var(--text2);margin-top:7px}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text2)}
+.player-list{display:flex;flex-direction:column;gap:9px}
+.player-row{display:flex;align-items:center;gap:11px;background:var(--bg3);border-radius:var(--radius-sm);padding:11px 13px;border:1px solid transparent}
+.player-row.me{border-color:var(--gold-border)}
+.player-av{width:35px;height:35px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.player-name{font-weight:600;font-size:15px;flex:1}
+.player-you{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em}
+.host-badge{font-size:11px;color:var(--text2)}
+
+/* BID SCREEN */
+.bid-scr{padding:22px;display:flex;flex-direction:column;gap:18px}
+.rnd-hdr{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px}
+.rnd-lbl{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--text2)}
+.rnd-num{font-family:var(--f-title);font-style:italic;font-size:56px;color:var(--gold-light);line-height:1;font-weight:400}
+.rnd-info{font-size:13px;color:var(--text2)}
+.bid-picker{display:flex;flex-direction:column;align-items:center;gap:14px}
+.bid-title{font-size:14px;font-weight:600;color:var(--text2);letter-spacing:.04em}
+.bid-ctrl{display:flex;align-items:center;gap:20px}
+.bid-arrow{width:54px;height:54px;border-radius:var(--radius-sm);background:var(--bg3);border:1.5px solid var(--gold-border);color:var(--gold-light);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:var(--f-ui)}
+.bid-arrow:hover{background:var(--bg4)}
+.bid-arrow:active{transform:scale(.9)}
+.bid-arrow:disabled{opacity:.3;cursor:not-allowed}
+.bid-big{font-family:var(--f-title);font-size:84px;color:var(--gold-light);line-height:1;font-weight:600;min-width:96px;text-align:center}
+.bid-zero{color:var(--text2)}
+.bid-nums{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+.bid-num{width:52px;height:52px;border-radius:var(--radius-sm);background:var(--bg3);border:1.5px solid var(--gold-border);color:var(--text);font-family:var(--f-title);font-size:24px;font-weight:400;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .14s}
+.bid-num:active{transform:scale(.9)}
+.bid-num.sel{background:var(--gold);border-color:var(--gold);color:var(--ink);box-shadow:0 4px 14px rgba(212,160,23,.38)}
+.oracle-trig-wrap{display:flex;justify-content:center}
+.oracle-trig{background:transparent;border:1px solid rgba(212,160,23,.28);border-radius:999px;padding:8px 18px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .18s;font-family:var(--f-ui)}
+.oracle-trig:hover{border-color:var(--gold);color:var(--gold-light);background:var(--gold-dim)}
+
+/* PLAY SCREEN */
+.play-scr{padding:22px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.bid-rem{background:var(--bg3);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:12px 18px;text-align:center;width:100%}
+.br-lbl{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text2)}
+.br-val{font-family:var(--f-title);font-size:28px;color:var(--gold-light);font-weight:400}
+.trick-ctr{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1;justify-content:center;width:100%}
+.trick-lbl{font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.1em;text-transform:uppercase}
+.trick-btns{display:flex;align-items:center;gap:26px}
+.trick-btn{width:78px;height:78px;border-radius:50%;border:2px solid var(--gold-border);background:var(--bg3);color:var(--gold-light);font-size:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .14s;font-family:var(--f-ui)}
+.trick-btn:active{transform:scale(.88)}
+.trick-btn:disabled{opacity:.28;cursor:not-allowed}
+.trick-big{font-family:var(--f-title);font-size:100px;color:var(--gold-light);line-height:1;font-weight:600;min-width:108px;text-align:center}
+.trick-status{font-size:13px;font-weight:700;padding:6px 15px;border-radius:999px}
+.ts-good{background:rgba(39,174,96,.14);color:var(--green);border:1px solid rgba(39,174,96,.28)}
+.ts-bad{background:rgba(192,57,43,.14);color:var(--red);border:1px solid rgba(192,57,43,.28)}
+.ts-zero{background:var(--bg3);color:var(--text2);border:1px solid var(--gold-border)}
+.players-sub{font-size:12px;color:var(--text2);text-align:center}
+
+/* BONUS SCREEN */
+.bonus-scr{padding:22px;display:flex;flex-direction:column;gap:14px}
+.bonus-grid{display:flex;flex-direction:column;gap:9px}
+.bonus-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:11px 13px;gap:10px}
+.bonus-info{flex:1}
+.bonus-name{font-size:14px;font-weight:600;color:var(--text)}
+.bonus-pts{font-size:12px;color:var(--gold);font-weight:700}
+.bonus-sub{font-size:11px;color:var(--text3)}
+.bonus-ctr{display:flex;align-items:center;gap:11px}
+.bonus-btn{width:33px;height:33px;border-radius:8px;background:var(--bg4);border:1px solid var(--gold-border);color:var(--gold-light);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--f-ui)}
+.bonus-btn:disabled{opacity:.28;cursor:not-allowed}
+.bonus-count{font-size:19px;font-weight:700;min-width:22px;text-align:center;color:var(--text)}
+.bonus-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:13px 15px}
+.bonus-total-lbl{font-size:14px;font-weight:700}
+.bonus-total-val{font-family:var(--f-title);font-size:28px;color:var(--gold-light);font-weight:600}
+
+/* RESULT SCREEN */
+.result-scr{padding:22px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.result-title{font-family:var(--f-title);font-style:italic;font-size:28px;color:var(--gold-light);font-weight:400;text-align:center}
+.score-bd{background:var(--bg2);border:1px solid var(--gold-border);border-radius:var(--radius);overflow:hidden;width:100%}
+.score-row{display:flex;justify-content:space-between;align-items:center;padding:12px 17px;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.score-row:last-child{border-bottom:none}
+.score-lbl{color:var(--text2);font-weight:500}
+.score-val{font-weight:700;font-size:16px}
+.s-pos{color:var(--green)}.s-neg{color:var(--red)}.s-neu{color:var(--text)}
+.score-total-row{background:var(--gold-dim);border-top:1px solid var(--gold-border)!important}
+.score-total-lbl{font-size:15px;font-weight:700;color:var(--text)}
+.score-total-num{font-family:var(--f-title);font-size:32px;font-weight:600}
+.rt-card{background:var(--bg3);border:1px solid var(--gold-border);border-radius:var(--radius);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;width:100%}
+.rt-lbl{font-size:13px;color:var(--text2);font-weight:500}
+.rt-val{font-family:var(--f-title);font-size:38px;color:var(--gold-light);font-weight:600}
+
+/* SCOREBOARD */
+.board-scr{display:flex;flex-direction:column}
+.board-tabs{display:flex;overflow-x:auto;gap:6px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--gold-border);flex-shrink:0;-webkit-overflow-scrolling:touch}
+.board-tab{flex-shrink:0;padding:6px 13px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;background:var(--bg3);border:1px solid var(--gold-border);color:var(--text2);transition:all .14s;font-family:var(--f-ui)}
+.board-tab.active{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.board-content{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.board-player{background:var(--bg2);border:1px solid var(--gold-border);border-radius:var(--radius);overflow:hidden}
+.board-player.leader{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.board-top{display:flex;align-items:center;gap:11px;padding:13px 15px}
+.board-rank{font-family:var(--f-title);font-size:22px;color:var(--text2);font-weight:400;min-width:26px}
+.board-rank.gold{color:var(--gold-light)}
+.board-pname{font-size:15px;font-weight:700;flex:1}
+.board-total{font-family:var(--f-title);font-size:26px;font-weight:600;color:var(--gold-light)}
+.board-rounds{display:flex;overflow-x:auto;padding:0 15px 11px;gap:7px;-webkit-overflow-scrolling:touch}
+.r-chip{flex-shrink:0;background:var(--bg3);border-radius:8px;padding:5px 9px;text-align:center;min-width:42px;border:1px solid rgba(255,255,255,.06)}
+.r-chip-lbl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.08em}
+.r-chip-sc{font-size:14px;font-weight:700}
+.rcs-pos{color:var(--green)}.rcs-neg{color:var(--red)}.rcs-zero{color:var(--text2)}
+
+/* GAME OVER */
+.over-scr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 22px;gap:18px;text-align:center;background:radial-gradient(ellipse at 50% 20%,#2a2010,var(--bg) 70%)}
+.over-trophy{font-size:72px;animation:bounce 1s ease infinite alternate}
+@keyframes bounce{to{transform:translateY(-12px) scale(1.06)}}
+.over-lbl{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--text2)}
+.over-winner{font-family:var(--f-title);font-style:italic;font-size:42px;color:var(--gold-light);font-weight:600;letter-spacing:-.02em}
+.over-score{font-family:var(--f-title);font-size:24px;color:var(--text2);font-weight:300;font-style:italic}
+.podium{display:flex;flex-direction:column;gap:7px;width:100%}
+.podium-row{display:flex;align-items:center;gap:11px;background:var(--bg3);border-radius:var(--radius-sm);padding:11px 14px;border:1px solid var(--gold-border)}
+.pod-rank{font-size:18px;min-width:28px}
+.pod-name{flex:1;font-weight:600;font-size:15px}
+.pod-score{font-family:var(--f-title);font-size:22px;color:var(--gold-light);font-weight:400}
+
+/* WAITING */
+.waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;flex:1}
+.waiting-dots span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin:0 3px;animation:dotb 1.2s ease-in-out infinite both}
+.waiting-dots span:nth-child(2){animation-delay:.2s}
+.waiting-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotb{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.waiting-txt{font-size:14px;color:var(--text2);font-style:italic;text-align:center}
+
+/* ORACLE MODAL */
+.oracle-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+.oracle-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#000;border-bottom:1px solid var(--gold-border);flex-shrink:0}
+.oracle-title{font-family:var(--f-title);font-style:italic;font-size:22px;color:var(--gold-light);font-weight:400}
+.close-btn{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:7px}
+.close-btn:hover{background:var(--bg3)}
+.camera-wrap{position:relative;flex-shrink:0;height:240px;background:#000;overflow:hidden}
+.cam-video{width:100%;height:100%;object-fit:cover}
+.scan-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.scan-skull{font-size:48px;animation:scanpulse 1.2s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(212,160,23,.8))}
+@keyframes scanpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.14);opacity:.7}}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scanmove 1.8s ease-in-out infinite}
+@keyframes scanmove{0%{top:10%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:90%;opacity:0}}
+.scan-txt{font-size:12px;font-weight:700;color:var(--gold-light);letter-spacing:.16em;text-transform:uppercase}
+.oracle-body{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.oracle-sec-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
+.oracle-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ocb{background:var(--bg3);border:1.5px solid var(--gold-border);border-radius:var(--radius-sm);padding:9px 11px;cursor:default;display:flex;align-items:center;justify-content:space-between;gap:7px}
+.ocb.has{border-color:var(--gold);background:var(--gold-dim)}
+.ocb-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.ocb-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ocb-sub{font-size:10px;color:var(--text2)}
+.ocb-ctr{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.ocb-btn{width:26px;height:26px;border-radius:6px;background:var(--bg4);border:1px solid var(--gold-border);color:var(--gold-light);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--f-ui)}
+.ocb-btn:disabled{opacity:.28;cursor:not-allowed}
+.ocb-n{font-size:17px;font-weight:700;color:var(--text);min-width:18px;text-align:center}
+.oracle-advice{background:linear-gradient(135deg,#1a1200,#0f0d1a);border:1.5px solid var(--gold-border);border-radius:var(--radius);padding:16px;text-align:center}
+.adv-skull{font-size:34px;margin-bottom:6px}
+.adv-bid-lbl{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text2)}
+.adv-bid-num{font-family:var(--f-title);font-size:72px;color:var(--gold-light);line-height:1;font-weight:600}
+.adv-txt{font-size:13px;color:var(--text);margin-top:5px;line-height:1.5;font-style:italic}
+.adv-empty{font-size:13px;color:var(--text2);font-style:italic}
+
+/* FIREBASE MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:flex;align-items:flex-end;max-width:480px;margin:0 auto}
+.modal-sheet{background:var(--bg2);border-top-left-radius:22px;border-top-right-radius:22px;border:1px solid var(--gold-border);border-bottom:none;padding:26px 22px 38px;width:100%;display:flex;flex-direction:column;gap:14px;max-height:88vh;overflow-y:auto;animation:slideup .28s cubic-bezier(.2,.7,.2,1)}
+@keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-family:var(--f-title);font-style:italic;font-size:26px;color:var(--gold-light);font-weight:400}
+.modal-body{font-size:14px;color:var(--text2);line-height:1.6}
+.fb-textarea{background:var(--bg3);border:1.5px solid var(--gold-border);border-radius:var(--radius-sm);color:var(--text);font-family:monospace;font-size:12px;padding:11px;width:100%;height:130px;resize:none;outline:none}
+.fb-textarea:focus{border-color:var(--gold)}
+
+/* MISC */
+.divider{height:1px;background:var(--gold-border);margin:3px 0}
+.spacer{flex:1}
+.col-gold{color:var(--gold-light)}.col-green{color:var(--green)}.col-red{color:var(--red)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+
+// ── FIREBASE SECURITY RULES ──────────────────────────────
+// REQUIRED before going live (GitHub Pages or any public URL).
+// Your Firebase config is visible in page source, so rules are the only
+// thing preventing strangers from reading or overwriting your game data.
+//
+// In the Firebase Console → Realtime Database → Rules, paste this:
+//
+// {
+//   "rules": {
+//     "games": {
+//       "$gameCode": {
+//         ".read": true,
+//         ".write": true,
+//         ".validate": "newData.hasChildren(['code','hostId','round','phase','players'])",
+//         "players": {
+//           "$playerId": {
+//             "totalScore": {
+//               ".validate": "newData.isNumber()"
+//             },
+//             "name": {
+//               ".validate": "newData.isString() && newData.val().length <= 20"
+//             }
+//           }
+//         }
+//       }
+//     },
+//     "$other": { ".read": false, ".write": false }
+//   }
+// }
+//
+// This allows anyone with a game code to read/write that game (needed for
+// multiplayer), but validates the shape of the data and blocks all other
+// database paths. For stronger protection, enable Firebase Anonymous Auth
+// and add "auth != null" conditions to the write rules.
+// ─────────────────────────────────────────────────────────
+
+// ── ID & helpers ────────────────────────────────────────
+function getMyId(){let id=localStorage.getItem('sk_uid');if(!id){id=Math.random().toString(36).slice(2,11);localStorage.setItem('sk_uid',id)}return id}
+function mkCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('')}
+
+// ── Scoring ─────────────────────────────────────────────
+function calcBidPts(bid,tricks,round){
+  if(bid===0)return tricks===0?10*round:-10*round;
+  return tricks===bid?20*tricks:-10*Math.abs(tricks-bid);
+}
+function bidOK(bid,tricks){return(bid===0&&tricks===0)||(bid>0&&tricks===bid)}
+function calcBonusTotal(b){
+  if(!b)return 0;
+  return(b.std14||0)*10+(b.blk14||0)*20+(b.mermPirate||0)*20+(b.pirateSK||0)*30+(b.skMerm||0)*40+(b.lootAlly||0)*20;
+}
+function calcRoundScore(bid,tricks,bonuses,round){
+  return calcBidPts(bid,tricks,round)+(bidOK(bid,tricks)?(bonuses||0):0);
+}
+
+// ── Oracle advisor ───────────────────────────────────────
+const QUIPS=[
+  "The bones never lie, matey.",
+  "Fortune favors the bold — and the well-advised.",
+  "Arrr, trust yer Oracle this round.",
+  "I've sailed these seas a thousand times.",
+  "Steel yer nerves and hold yer course.",
+];
+function oracleAdvice(hand,round,numPlayers){
+  const{pirates=0,skullKing=0,mermaids=0,escapes=0,blackHigh=0,blackMid=0,blackLow=0,colorHigh=0,colorMid=0,colorLow=0}=hand;
+
+  // Round difficulty offset: early rounds = easier to win tricks (less competition),
+  // late rounds = harder (more powerful cards in circulation, longer gauntlets).
+  // Scale: +0.14 in round 1 tapering to -0.14 in round 10.
+  const rd=round<=2?0.14:round<=4?0.07:round<=6?0.0:round<=8?-0.07:-0.14;
+
+  // Player count multiplier: fewer players = easier to take a trick.
+  const pf=numPlayers<=2?1.18:numPlayers<=3?1.08:numPlayers<=5?1.0:0.88;
+
+  // Base win probability per card type + round sensitivity.
+  // Specials (Pirates/SK/Mermaids) are barely affected by round — they beat suited cards regardless.
+  // Mid-strength suited cards are most affected — far riskier in round 10 than round 1.
+  let exp=0;
+  exp+=pirates    *Math.min(0.97,Math.max(0.82, 0.90+rd*0.10));
+  exp+=skullKing  *Math.min(0.88,Math.max(0.54, 0.72+rd*0.18));
+  exp+=mermaids   *Math.min(0.90,Math.max(0.58, 0.76+rd*0.14));
+  exp+=blackHigh  *Math.min(0.95,Math.max(0.52, 0.85+rd*0.32));
+  exp+=blackMid   *Math.min(0.78,Math.max(0.10, 0.60+rd*0.55));
+  exp+=blackLow   *Math.min(0.46,Math.max(0.03, 0.22+rd*0.42));
+  exp+=colorHigh  *Math.min(0.68,Math.max(0.08, 0.50+rd*0.62));
+  exp+=colorMid   *Math.min(0.38,Math.max(0.02, 0.22+rd*0.52));
+  exp+=colorLow   *Math.min(0.14,Math.max(0.01, 0.05+rd*0.22));
+  // escapes always contribute 0
+  exp*=pf;
+
+  const bid=Math.min(Math.round(exp),round);
+  const total=pirates+skullKing+mermaids+escapes+blackHigh+blackMid+blackLow+colorHigh+colorMid+colorLow;
+  if(total===0)return{bid:0,text:"Enter yer cards above and the Oracle shall divine yer fate…"};
+
+  // Round-aware flavour text
+  const q=QUIPS[Math.floor(Math.random()*QUIPS.length)];
+  let txt;
+  if(round<=2){
+    txt=bid===0
+      ?`Short hand — layin'low is safe. ${q}`
+      :`Only ${round} card${round>1?'s':''} dealt — make it count. ${q}`;
+  }else if(bid===0){
+    const reward=10*round;
+    txt=`Bid ZERO for +${reward} pts if ye stay clean — ${round>=7?'these late rounds reward the daring!':`fortune favors the bold. ${q}`}`;
+  }else if(bid===round){
+    txt=`Claim ALL ${round} tricks — ${q}`;
+  }else if(round>=8&&bid<round/2){
+    txt=`Late game — yer hand be thin. Play safe at ${bid}. ${q}`;
+  }else{
+    txt=q;
+  }
+  return{bid,text:txt};
+}
+
+// ── Firebase ─────────────────────────────────────────────
+const FB_KEY='sk_firebase_config';let _db=null;
+function loadFbCfg(){try{return JSON.parse(localStorage.getItem(FB_KEY))}catch{return null}}
+function saveFbCfg(c){localStorage.setItem(FB_KEY,JSON.stringify(c))}
+function initFb(cfg){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(cfg);
+    _db=firebase.database();return _db;
+  }catch(e){console.error(e);return null}
+}
+async function fbSet(p,v){if(_db)await _db.ref(p).set(v)}
+async function fbUpd(p,v){if(_db)await _db.ref(p).update(v)}
+function fbOn(p,cb){if(!_db)return()=>{};const r=_db.ref(p);r.on('value',s=>cb(s.val()));return()=>r.off('value')}
+async function fbGet(p){if(!_db)return null;return(await _db.ref(p).once('value')).val()}
+async function fbTransact(p,fn){if(!_db)return;return _db.ref(p).transaction(fn)}
+
+// ── Shared components ────────────────────────────────────
+function Waiting({text}){return(<div className="waiting"><div className="waiting-dots"><span/><span/><span/></div><div className="waiting-txt">{text||'Waiting…'}</div></div>)}
+function Toggle({on,onToggle}){return<div className={`tog ${on?'on':''}`} onClick={onToggle}/>}
+
+function Header({gameCode,inGame,onBoard,onOracle,onHowTo}){
+  const lastTap=useRef(0);
+  function handleSkullTap(e){
+    const now=Date.now();
+    if(now-lastTap.current<320){
+      e.preventDefault();
+      onOracle();
+    }
+    lastTap.current=now;
+  }
+  return(<div className="hdr">
+    <span className="hdr-title">
+      <span
+        onTouchEnd={handleSkullTap}
+        onDoubleClick={onOracle}
+        style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none'}}
+      >☠️</span>{' '}Skull King
+    </span>
+    {gameCode&&<span className="hdr-code">{gameCode}</span>}
+    <div className="hdr-btns">
+      {inGame&&<button className="icon-btn" title="Scoreboard" onClick={onBoard}>📊</button>}
+      <button className="icon-btn" title="How to Play" onClick={onHowTo}>❓</button>
+    </div>
+  </div>);
+}
+
+// ── HOME ─────────────────────────────────────────────────
+function HomeScreen({onCreate,onJoin,fbReady,onSetupFb}){
+  return(<div className="home-bg">
+    <div className="skull-em">☠️</div>
+    <div className="home-title">Skull King</div>
+    <div className="home-sub">Score Tracker</div>
+    <div className="home-btns">
+      <button className="btn btn-gold" onClick={onCreate}>⚔️ Create Game</button>
+      <button className="btn btn-outline" onClick={onJoin}>🗺️ Join Game</button>
+    </div>
+    <div className="fb-badge" onClick={onSetupFb}>
+      <span className={`fb-dot${fbReady?'':' off'}`}/>
+      <span>{fbReady?'Online mode — multi-device ready':'Local mode · tap to enable online play'}</span>
+    </div>
+  </div>);
+}
+
+// ── CREATE ───────────────────────────────────────────────
+function CreateScreen({onBack,onCreate}){
+  const[name,setName]=useState('');
+  const[adv,setAdv]=useState(false);
+  return(<div className="scr setup-scr">
+    <button className="back-btn" onClick={onBack}>← Back</button>
+    <div className="setup-title">New Game</div>
+    <div className="setup-form">
+      <div className="inp-wrap">
+        <div className="inp-label">Your Pirate Name</div>
+        <input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Captain Redbeard…" maxLength={20} autoFocus/>
+      </div>
+      <div className="tog-row">
+        <div className="tog-info">
+          <div className="tog-lbl">Advanced Rules</div>
+          <div className="tog-sub">Kraken, White Whale, Loot & Pirate abilities</div>
+        </div>
+        <Toggle on={adv} onToggle={()=>setAdv(a=>!a)}/>
+      </div>
+      <div className="info-banner">A <strong>6-letter game code</strong> will be generated. Share it with your crew so they can join on their own phones.</div>
+      <button className="btn btn-gold" onClick={()=>name.trim()&&onCreate(name.trim(),adv)} disabled={!name.trim()}>⚓ Create Game</button>
+    </div>
+  </div>);
+}
+
+// ── JOIN ─────────────────────────────────────────────────
+function JoinScreen({onBack,onJoin}){
+  const[code,setCode]=useState('');
+  const[name,setName]=useState('');
+  const[err,setErr]=useState('');
+  const[busy,setBusy]=useState(false);
+  async function go(){
+    if(!code.trim()||!name.trim())return;
+    setBusy(true);setErr('');
+    const r=await onJoin(code.trim().toUpperCase(),name.trim());
+    if(r&&r.error)setErr(r.error);
+    setBusy(false);
+  }
+  return(<div className="scr setup-scr">
+    <button className="back-btn" onClick={onBack}>← Back</button>
+    <div className="setup-title">Join Game</div>
+    <div className="setup-form">
+      <div className="inp-wrap">
+        <div className="inp-label">Game Code</div>
+        <input className="inp inp-code" value={code} onChange={e=>setCode(e.target.value.toUpperCase().slice(0,6))} placeholder="ABC123" maxLength={6}/>
+      </div>
+      <div className="inp-wrap">
+        <div className="inp-label">Your Pirate Name</div>
+        <input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Captain Bluebeard…" maxLength={20}/>
+      </div>
+      {err&&<div style={{color:'var(--red)',fontSize:14}}>⚠️ {err}</div>}
+      <button className="btn btn-gold" onClick={go} disabled={code.length<6||!name.trim()||busy}>
+        {busy?'🌊 Sailing to your crew…':'🏴‍☠️ Join Game'}
+      </button>
+    </div>
+  </div>);
+}
+
+// ── LOBBY ────────────────────────────────────────────────
+function LobbyScreen({game,myId,onStart,onLeave}){
+  const players=Object.entries(game.players||{});
+  const host=game.hostId===myId;
+  function copy(){if(navigator.clipboard)navigator.clipboard.writeText(game.code).catch(()=>{})}
+  return(<div className="scr lobby-scr">
+    <div className="code-disp" onClick={copy}>
+      <div className="code-lbl">Game Code — tap to copy</div>
+      <div className="code-val">{game.code}</div>
+      <div className="code-sub">Share this with your crew ☠️</div>
+    </div>
+    <div className="sec-title">Pirates Aboard ({players.length})</div>
+    <div className="player-list">
+      {players.map(([pid,p])=>(
+        <div key={pid} className={`player-row${pid===myId?' me':''}`}>
+          <div className="player-av">🏴‍☠️</div>
+          <div className="player-name">{p.name}</div>
+          {pid===myId&&<span className="player-you">YOU</span>}
+          {pid===game.hostId&&<span className="host-badge">Captain</span>}
+        </div>
+      ))}
+    </div>
+    <div className="spacer"/>
+    {host?(
+      <div style={{display:'flex',flexDirection:'column',gap:9}}>
+        <button className="btn btn-gold" onClick={onStart} disabled={players.length<2}>
+          {players.length<2?'Waiting for crew…':'⚓ Start the Voyage!'}
+        </button>
+        {players.length<2&&<div style={{textAlign:'center',fontSize:13,color:'var(--text2)'}}>Need at least 2 pirates</div>}
+      </div>
+    ):<Waiting text="Waiting for the Captain to start…"/>}
+  </div>);
+}
+
+// ── BID ──────────────────────────────────────────────────
+function BidScreen({game,myId,myBid,onSetBid,onSubmitBid,submittedBid,openOracle}){
+  const round=game.round||1;
+  const players=Object.entries(game.players||{});
+  const subCount=players.filter(([,p])=>p.rounds?.[round]?.bidSubmitted).length;
+  return(<div className="scr bid-scr">
+    <div className="rnd-hdr">
+      <div className="rnd-lbl">Round</div>
+      <div className="rnd-num">{round}</div>
+      <div className="rnd-info">{round} card{round!==1?'s':''} dealt · bid 0–{round}</div>
+    </div>
+    {submittedBid!==undefined?(
+      <div style={{textAlign:'center',display:'flex',flexDirection:'column',gap:12,alignItems:'center',flex:1,justifyContent:'center'}}>
+        <div style={{fontSize:15,color:'var(--text2)'}}>Your bid:</div>
+        <div className={`bid-big${submittedBid===0?' bid-zero':''}`}>{submittedBid}</div>
+        <div className="players-sub">{subCount} / {players.length} bids locked in</div>
+        <Waiting text="Waiting for all pirates to bid…"/>
+      </div>
+    ):(
+      <>
+        <div className="bid-picker">
+          <div className="bid-title">How many tricks will you win?</div>
+          <div className="bid-ctrl">
+            <button className="bid-arrow" onClick={()=>onSetBid(Math.max(0,(myBid??0)-1))} disabled={(myBid??0)<=0}>−</button>
+            <div className={`bid-big${(myBid??-1)===0?' bid-zero':''}`}>{myBid??'?'}</div>
+            <button className="bid-arrow" onClick={()=>onSetBid(Math.min(round,(myBid??0)+1))} disabled={(myBid??0)>=round}>+</button>
+          </div>
+          <div className="bid-nums">
+            {Array.from({length:round+1},(_,i)=>(
+              <button key={i} className={`bid-num${myBid===i?' sel':''}`} onClick={()=>onSetBid(i)}>{i}</button>
+            ))}
+          </div>
+        </div>
+
+        <button className="btn btn-gold" onClick={onSubmitBid} disabled={myBid===null||myBid===undefined}>⚓ Lock In Bid</button>
+      </>
+    )}
+  </div>);
+}
+
+// ── PLAY ─────────────────────────────────────────────────
+function PlayScreen({game,myId,myTricks,onSetTricks,onSubmitTricks,submittedTricks,isHost,onAdvance}){
+  const round=game.round||1;
+  const myData=game.players?.[myId]?.rounds?.[round]||{};
+  const bid=myData.bid??0;
+  const players=Object.entries(game.players||{});
+  const subCount=players.filter(([,p])=>p.rounds?.[round]?.trickSubmitted).length;
+  const diff=myTricks-bid;
+  const status=bid===0?(myTricks===0?'ts-good':'ts-bad'):diff===0?'ts-good':diff!==0?'ts-bad':'ts-zero';
+  const statusTxt=bid===0?(myTricks===0?'0 bid — stay clean!':'⚠️ You took a trick!'):(diff===0?'✓ On target!':diff>0?`▲ Over by ${diff}`:`▽ Under by ${Math.abs(diff)}`);
+  return(<div className="scr play-scr">
+    <div className="bid-rem" style={{width:'100%'}}>
+      <div className="br-lbl">Your Bid</div>
+      <div className="br-val">{bid} trick{bid!==1?'s':''}</div>
+    </div>
+    {submittedTricks!==undefined&&submittedTricks!==null?(
+      <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12}}>
+        <div style={{fontSize:15,color:'var(--text2)'}}>You took:</div>
+        <div className="trick-big">{submittedTricks}</div>
+        <div className="players-sub">{subCount} / {players.length} submitted</div>
+        {isHost&&subCount===players.length?(
+          <button className="btn btn-gold" onClick={onAdvance} style={{marginTop:10}}>📊 End Round → Bonuses</button>
+        ):<Waiting text="Round in progress…"/>}
+      </div>
+    ):(
+      <>
+        <div className="trick-ctr">
+          <div className="trick-lbl">Tricks Won</div>
+          <div className="trick-btns">
+            <button className="trick-btn" onClick={()=>onSetTricks(Math.max(0,myTricks-1))} disabled={myTricks<=0}>−</button>
+            <div className="trick-big">{myTricks}</div>
+            <button className="trick-btn" onClick={()=>onSetTricks(Math.min(round,myTricks+1))} disabled={myTricks>=round}>+</button>
+          </div>
+          <div className={`trick-status ${status}`}>{statusTxt}</div>
+        </div>
+        <button className="btn btn-gold" onClick={()=>onSubmitTricks(myTricks)}>✓ Submit Tricks</button>
+      </>
+    )}
+  </div>);
+}
+
+// ── BONUS ────────────────────────────────────────────────
+function BonusScreen({game,myId,advancedRules,onSubmitBonus}){
+  const round=game.round||1;
+  const myData=game.players?.[myId]?.rounds?.[round]||{};
+  const bid=myData.bid??0;const tricks=myData.tricks??0;
+  const correct=bidOK(bid,tricks);
+  const[bonuses,setBonuses]=useState({std14:0,blk14:0,mermPirate:0,pirateSK:0,skMerm:0,lootAlly:0});
+  function ch(key,d,max){setBonuses(b=>({...b,[key]:Math.max(0,Math.min(max,(b[key]||0)+d))}))}
+  const total=calcBonusTotal(bonuses);
+  const bidPts=calcBidPts(bid,tricks,round);
+  const rows=[
+    {key:'std14',label:'Standard 14 Captured',sub:'Green, Purple or Yellow',pts:10,max:3},
+    {key:'blk14',label:'Black 14 Captured',sub:'Jolly Roger trump 14',pts:20,max:1},
+    {key:'mermPirate',label:'Mermaid → by your Pirate',sub:'Your Pirate captured a Mermaid',pts:20,max:2},
+    {key:'pirateSK',label:'Pirate → by your Skull King',sub:'Your Skull King captured a Pirate',pts:30,max:5},
+    {key:'skMerm',label:'Skull King → by your Mermaid',sub:'Your Mermaid captured the Skull King',pts:40,max:1},
+    ...(advancedRules?[{key:'lootAlly',label:'Loot Alliance Success',sub:'Both allies hit their bid',pts:20,max:2}]:[]),
+  ];
+  return(<div className="scr bonus-scr">
+    <div style={{display:'flex',flexDirection:'column',gap:3}}>
+      <div className="rnd-lbl">Round {round} · Bonus Points</div>
+      <div style={{fontSize:13,color:correct?'var(--green)':'var(--red)',marginTop:3}}>
+        {correct?'✓ Bid correct — bonuses will count!':'✗ Bid wrong — bonuses logged but won\'t count'}
+      </div>
+    </div>
+    <div className="bonus-grid">
+      {rows.map(row=>(
+        <div key={row.key} className="bonus-row">
+          <div className="bonus-info">
+            <div className="bonus-name">{row.label}</div>
+            <div className="bonus-pts">+{row.pts} pts each · max {row.max}</div>
+            <div className="bonus-sub">{row.sub}</div>
+          </div>
+          <div className="bonus-ctr">
+            <button className="bonus-btn" onClick={()=>ch(row.key,-1,row.max)} disabled={bonuses[row.key]<=0}>−</button>
+            <div className="bonus-count">{bonuses[row.key]}</div>
+            <button className="bonus-btn" onClick={()=>ch(row.key,1,row.max)} disabled={bonuses[row.key]>=row.max}>+</button>
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className="bonus-total-row">
+      <div className="bonus-total-lbl">Bonus Points</div>
+      <div className="bonus-total-val">+{total}</div>
+    </div>
+    <button className="btn btn-gold" onClick={()=>onSubmitBonus(bonuses,total)}>📜 Submit Round</button>
+  </div>);
+}
+
+// ── RESULT ───────────────────────────────────────────────
+function ResultScreen({game,myId,isHost,onNext}){
+  const round=game.round||1;
+  const myData=game.players?.[myId]?.rounds?.[round]||{};
+  const bid=myData.bid??0;const tricks=myData.tricks??0;
+  const bonuses=myData.bonuses??0;const roundScore=myData.roundScore??0;
+  const total=game.players?.[myId]?.totalScore??0;
+  const bidPts=calcBidPts(bid,tricks,round);
+  const correct=bidOK(bid,tricks);
+  const players=Object.entries(game.players||{});
+  const allIn=players.every(([,p])=>p.rounds?.[round]?.bonusSubmitted);
+  return(<div className="scr result-scr">
+    <div className="result-title">{correct?'⚓ Well sailed!':'💀 Overboard!'}</div>
+    <div className="score-bd">
+      <div className="score-row"><span className="score-lbl">Bid</span><span className="score-val s-neu">{bid} trick{bid!==1?'s':''}</span></div>
+      <div className="score-row"><span className="score-lbl">Taken</span><span className="score-val s-neu">{tricks} trick{tricks!==1?'s':''}</span></div>
+      <div className="score-row"><span className="score-lbl">Bid Points</span><span className={`score-val ${bidPts>=0?'s-pos':'s-neg'}`}>{bidPts>0?'+':''}{bidPts}</span></div>
+      {bonuses>0&&<div className="score-row"><span className="score-lbl">Bonus Points</span><span className={`score-val ${correct?'s-pos':'s-neu'}`}>{correct?`+${bonuses}`:`${bonuses} (not counted)`}</span></div>}
+      <div className="score-row score-total-row">
+        <span className="score-total-lbl">Round Score</span>
+        <span className={`score-total-num ${roundScore>=0?'s-pos':'s-neg'}`}>{roundScore>0?'+':''}{roundScore}</span>
+      </div>
+    </div>
+    <div className="rt-card">
+      <div className="rt-lbl">Running Total</div>
+      <div className="rt-val">{total}</div>
+    </div>
+    <div className="players-sub">{players.filter(([,p])=>p.rounds?.[round]?.bonusSubmitted).length} / {players.length} submitted</div>
+    {isHost&&allIn?(
+      <button className="btn btn-gold" onClick={onNext}>{round>=10?'🏆 Final Scores':`⚔️ Round ${round+1} →`}</button>
+    ):isHost?<Waiting text="Waiting for all pirates to submit…"/>:<Waiting text="Waiting for Captain to advance…"/>}
+  </div>);
+}
+
+// ── SCOREBOARD ───────────────────────────────────────────
+function ScoreboardScreen({game,myId,onBack,backLabel}){
+  const round=game.round||1;
+  const[view,setView]=useState('total');
+  const players=Object.entries(game.players||{}).map(([pid,p])=>({
+    pid,name:p.name,total:p.totalScore??0,rounds:p.rounds||{}
+  })).sort((a,b)=>b.total-a.total);
+  const rounds=Array.from({length:round},(_,i)=>i+1);
+  return(<div className="scr board-scr">
+    <div className="board-tabs">
+      <div className={`board-tab${view==='total'?' active':''}`} onClick={()=>setView('total')}>Total</div>
+      {rounds.map(r=><div key={r} className={`board-tab${view===r?' active':''}`} onClick={()=>setView(r)}>R{r}</div>)}
+    </div>
+    <div className="board-content">
+      {players.map((p,i)=>{
+        const rnd=view!=='total'?p.rounds[view]:null;
+        return(<div key={p.pid} className={`board-player${i===0&&view==='total'?' leader':''}`}>
+          <div className="board-top">
+            <div className={`board-rank${i===0&&view==='total'?' gold':''}`}>{i===0&&view==='total'?'👑':`#${i+1}`}</div>
+            <div className="board-pname">{p.name}{p.pid===myId?' (you)':''}</div>
+            {view==='total'?(
+              <div className="board-total">{p.total}</div>
+            ):rnd?(
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:12,color:'var(--text2)'}}>bid {rnd.bid} / took {rnd.tricks}</div>
+                <div className={`board-total ${(rnd.roundScore||0)>=0?'col-green':'col-red'}`}>{(rnd.roundScore||0)>0?'+':''}{rnd.roundScore||0}</div>
+              </div>
+            ):<div className="board-total" style={{color:'var(--text3)'}}>—</div>}
+          </div>
+          {view==='total'&&(
+            <div className="board-rounds">
+              {rounds.map(r=>{const rd=p.rounds[r];const s=rd?.roundScore??null;return(
+                <div key={r} className="r-chip">
+                  <div className="r-chip-lbl">R{r}</div>
+                  <div className={`r-chip-sc ${s===null?'rcs-zero':s>=0?'rcs-pos':'rcs-neg'}`}>{s===null?'·':(s>0?'+':'')+s}</div>
+                </div>
+              )})}
+            </div>
+          )}
+        </div>);
+      })}
+    </div>
+    {onBack&&<div style={{padding:'11px 14px',flexShrink:0}}><button className="btn btn-ghost" onClick={onBack}>{backLabel||'← Back to Game'}</button></div>}
+  </div>);
+}
+
+// ── GAME OVER ────────────────────────────────────────────
+function GameOverScreen({game,myId,onPlayAgain}){
+  const players=Object.entries(game.players||{}).map(([pid,p])=>({pid,name:p.name,total:p.totalScore??0})).sort((a,b)=>b.total-a.total);
+  const winner=players[0];
+  return(<div className="over-scr">
+    <div className="over-trophy">🏆</div>
+    <div className="over-lbl">Winner</div>
+    <div className="over-winner">{winner?.name}</div>
+    <div className="over-score">{winner?.total} points</div>
+    <div className="podium">
+      {players.map((p,i)=>(
+        <div key={p.pid} className="podium-row">
+          <div className="pod-rank">{i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}.`}</div>
+          <div className="pod-name">{p.name}{p.pid===myId?' (you)':''}</div>
+          <div className="pod-score">{p.total}</div>
+        </div>
+      ))}
+    </div>
+    <button className="btn btn-gold" onClick={onPlayAgain} style={{marginTop:6}}>🏴‍☠️ Play Again</button>
+  </div>);
+}
+
+// ── ORACLE MODAL ─────────────────────────────────────────
+function OracleModal({onClose,currentRound,numPlayers}){
+  const videoRef=useRef(null);
+  const[scanning,setScanning]=useState(true);
+  const[camErr,setCamErr]=useState(false);
+  const[hand,setHand]=useState({pirates:0,skullKing:0,mermaids:0,escapes:0,blackHigh:0,blackMid:0,blackLow:0,colorHigh:0,colorMid:0,colorLow:0});
+  useEffect(()=>{
+    let stream=null;
+    async function start(){
+      try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+        if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play()}
+      }catch{setCamErr(true);setScanning(false)}
+    }
+    start();
+    const t=setTimeout(()=>setScanning(false),2800);
+    return()=>{clearTimeout(t);if(stream)stream.getTracks().forEach(t=>t.stop())};
+  },[]);
+  function adj(key,d,max){setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}))}
+  const total=Object.values(hand).reduce((a,b)=>a+b,0);
+  const advice=total>0?oracleAdvice(hand,currentRound||1,numPlayers||4):null;
+  const cardRows=[
+    {key:'pirates',label:'⚔️ Pirates',sub:'Beat all suits & trump',max:5},
+    {key:'skullKing',label:'☠️ Skull King',sub:'Beats Pirates (not Mermaids)',max:1},
+    {key:'mermaids',label:'🧜 Mermaids',sub:'Beat Skull King, lose to Pirates',max:2},
+    {key:'blackHigh',label:'🖤 Black 10–14',sub:'Trump suit, high numbers',max:5},
+    {key:'blackMid',label:'🖤 Black 6–9',sub:'Trump suit, mid numbers',max:5},
+    {key:'blackLow',label:'🖤 Black 1–5',sub:'Trump suit, low numbers',max:5},
+    {key:'colorHigh',label:'🎨 Colored 11–14',sub:'Standard suit, high',max:6},
+    {key:'colorMid',label:'🎨 Colored 7–10',sub:'Standard suit, mid',max:6},
+    {key:'colorLow',label:'🎨 Colored 1–6',sub:'Standard suit, low',max:6},
+    {key:'escapes',label:'🌊 Escapes',sub:'Always lose',max:5},
+  ];
+  return(<div className="oracle-overlay">
+    <div className="oracle-hdr">
+      <div className="oracle-title">🔮 The Oracle Speaks</div>
+      <button className="close-btn" onClick={onClose}>✕</button>
+    </div>
+    <div className="camera-wrap">
+      {!camErr?<video ref={videoRef} className="cam-video" autoPlay playsInline muted/>
+        :<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',flexDirection:'column',gap:8}}>
+          <span style={{fontSize:40}}>🏴‍☠️</span>
+          <span style={{color:'var(--text2)',fontSize:13,textAlign:'center',padding:'0 20px'}}>Camera unavailable — serve over HTTPS to enable</span>
+        </div>}
+      {scanning&&!camErr&&<div className="scan-overlay">
+        <div className="scan-line"/>
+        <div className="scan-skull">☠️</div>
+        <div className="scan-txt">Reading yer hand…</div>
+      </div>}
+    </div>
+    <div className="oracle-body">
+      <div className="oracle-sec-title">Your Cards This Round</div>
+      <div className="oracle-grid">
+        {cardRows.map(row=>(
+          <div key={row.key} className={`ocb${hand[row.key]>0?' has':''}`}>
+            <div className="ocb-info">
+              <div className="ocb-name">{row.label}</div>
+              <div className="ocb-sub">{row.sub}</div>
+            </div>
+            <div className="ocb-ctr">
+              <button className="ocb-btn" onClick={()=>adj(row.key,-1,row.max)} disabled={hand[row.key]<=0}>−</button>
+              <div className="ocb-n">{hand[row.key]}</div>
+              <button className="ocb-btn" onClick={()=>adj(row.key,1,row.max)}>+</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="oracle-advice">
+        <div className="adv-skull">☠️</div>
+        {advice?(
+          <>
+            <div className="adv-bid-lbl">The Oracle recommends</div>
+            <div className="adv-bid-num">{advice.bid}</div>
+            <div className="adv-txt">"{advice.text}"</div>
+          </>
+        ):<div className="adv-empty">Enter yer cards above and the Oracle shall divine yer fate…</div>}
+      </div>
+    </div>
+  </div>);
+}
+
+// ── FIREBASE SETUP ───────────────────────────────────────
+function FbSetupModal({onClose,onSave,currentConfig}){
+  const[text,setText]=useState(currentConfig?JSON.stringify(currentConfig,null,2):'');
+  const[err,setErr]=useState('');
+  function save(){
+    try{
+      const cfg=JSON.parse(text);
+      if(!cfg.apiKey||!cfg.databaseURL)throw new Error('Missing apiKey or databaseURL');
+      onSave(cfg);
+    }catch(e){setErr(e.message)}
+  }
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="modal-title">🔥 Enable Online Play</div>
+      <div className="modal-body">
+        <p>Play across multiple devices using a free Firebase Realtime Database:</p><br/>
+        <p>1. Go to <strong>console.firebase.google.com</strong></p>
+        <p>2. Create project → Realtime Database → Start in test mode</p>
+        <p>3. Project Settings → Your apps → Web → Register app</p>
+        <p>4. Copy the <strong>firebaseConfig</strong> JSON and paste below:</p>
+      </div>
+      <textarea className="fb-textarea" value={text} onChange={e=>{setText(e.target.value);setErr('')}}
+        placeholder={'{\n  "apiKey": "...",\n  "databaseURL": "https://...firebaseio.com",\n  "projectId": "...",\n  ...\n}'}/>
+      {err&&<div style={{color:'var(--red)',fontSize:13}}>⚠️ {err}</div>}
+      <button className="btn btn-gold" onClick={save}>⚓ Connect Firebase</button>
+      {currentConfig&&<button className="btn btn-outline btn-sm" onClick={()=>{localStorage.removeItem(FB_KEY);onClose();window.location.reload()}}>Disconnect</button>}
+      <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+    </div>
+  </div>);
+}
+
+// ── HOW TO PLAY ──────────────────────────────────────────
+function HowToPlayModal({onClose}){
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="modal-title">📜 Quick Rules</div>
+      <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:9}}>
+        <p><strong>10 Rounds.</strong> Each round, bid how many tricks you'll win. Round 1 = 1 card, Round 10 = 10 cards.</p>
+        <div className="divider"/>
+        <p><strong>Bid 1+, Correct:</strong> +20 pts × tricks taken</p>
+        <p><strong>Bid 1+, Wrong:</strong> −10 pts × how many off</p>
+        <p><strong>Bid 0, Succeed:</strong> +10 × round number</p>
+        <p><strong>Bid 0, Fail:</strong> −10 × round number</p>
+        <div className="divider"/>
+        <p><strong>Bonus Points</strong> (only on correct bids):</p>
+        <p>• #14 Standard captured: +10 each</p>
+        <p>• #14 Black captured: +20</p>
+        <p>• Mermaid taken by Pirate: +20</p>
+        <p>• Pirate taken by Skull King: +30</p>
+        <p>• Skull King taken by Mermaid: +40</p>
+        <div className="divider"/>
+        <p><strong>Card Rank:</strong> Escape &lt; Colored Suits &lt; Black Trump &lt; Pirates &lt; Skull King &lt; Mermaids</p>
+        <p style={{fontSize:12,color:'var(--text2)'}}>Mermaids beat Skull King but lose to Pirates. First card played wins ties.</p>
+      </div>
+      <button className="btn btn-gold" onClick={onClose}>Got it, matey! ⚓</button>
+    </div>
+  </div>);
+}
+
+// ── APP ──────────────────────────────────────────────────
+const MY_ID=getMyId();
+const SCREENS={HOME:'home',CREATE:'create',JOIN:'join',LOBBY:'lobby',BID:'bid',PLAY:'play',BONUS:'bonus',RESULT:'result',BOARD:'board',OVER:'over'};
+
+function App(){
+  const[screen,setScreen]=useState(SCREENS.HOME);
+  const[prevScr,setPrevScr]=useState(null);
+  const[game,setGame]=useState(null);
+  const[myBid,setMyBid]=useState(null);
+  const[myTricks,setMyTricks]=useState(0);
+  const[fbReady,setFbReady]=useState(false);
+  const[showOracle,setShowOracle]=useState(false);
+  const[showFbSetup,setShowFbSetup]=useState(false);
+  const[showHowTo,setShowHowTo]=useState(false);
+
+  useEffect(()=>{const cfg=loadFbCfg();if(cfg){const db=initFb(cfg);if(db)setFbReady(true)}},[]);
+
+  // Subscribe to game
+  useEffect(()=>{
+    if(!game?.code||!fbReady)return;
+    return fbOn(`games/${game.code}`,data=>{
+      if(!data)return;
+      const old=game;
+      setGame(data);
+      if(data.phase!==old?.phase||data.round!==old?.round){
+        if(data.phase==='bid'){setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID)}
+        else if(data.phase==='play'){setScreen(SCREENS.PLAY)}
+        else if(data.phase==='bonus'){setScreen(SCREENS.BONUS)}
+        else if(data.phase==='result'){setScreen(SCREENS.RESULT)}
+        else if(data.phase==='over'){setScreen(SCREENS.OVER)}
+      }
+    });
+  },[game?.code,fbReady]);
+
+  function amHost(){return game?.hostId===MY_ID}
+
+  async function handleCreate(name,adv){
+    const code=mkCode();
+    const g={code,hostId:MY_ID,round:1,phase:'lobby',advancedRules:adv,players:{[MY_ID]:{name,totalScore:0,rounds:{}}}};
+    if(fbReady)await fbSet(`games/${code}`,g);
+    setGame(g);setScreen(SCREENS.LOBBY);
+  }
+
+  async function handleJoin(code,name){
+    if(!fbReady)return{error:'Online mode required to join. Set up Firebase first (tap the status badge on the home screen).'};
+    const ex=await fbGet(`games/${code}`);
+    if(!ex)return{error:'Game not found. Check the code and try again.'};
+    if(ex.phase!=='lobby')return{error:'This game has already started.'};
+    await fbUpd(`games/${code}/players/${MY_ID}`,{name,totalScore:0,rounds:{}});
+    setGame({...ex,players:{...ex.players,[MY_ID]:{name,totalScore:0,rounds:{}}}});
+    setScreen(SCREENS.LOBBY);
+    return{ok:true};
+  }
+
+  async function handleStartGame(){
+    const upd={phase:'bid',round:1};
+    if(fbReady)await fbUpd(`games/${game.code}`,upd);
+    setGame(g=>({...g,...upd}));setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);
+  }
+
+  async function handleSubmitBid(){
+    if(myBid===null||myBid===undefined)return;
+    const round=game.round;
+    const upd={bid:myBid,bidSubmitted:true};
+    if(fbReady){await fbUpd(`games/${game.code}/players/${MY_ID}/rounds/${round}`,upd);}
+    else{
+      setGame(g=>{const ng={...g,players:{...g.players,[MY_ID]:{...g.players[MY_ID],rounds:{...g.players[MY_ID].rounds,[round]:{...g.players[MY_ID].rounds?.[round],...upd}}}}};
+        // Local: auto-advance if all bid
+        const all=Object.values(ng.players).every(p=>p.rounds?.[round]?.bidSubmitted);
+        if(all&&amHost()){setTimeout(()=>{setGame(g2=>({...g2,phase:'play'}));setMyTricks(0);setScreen(SCREENS.PLAY)},100)}
+        return ng;
+      });
+    }
+  }
+
+  async function handleSubmitTricks(tricks){
+    const round=game.round;
+    const upd={tricks,trickSubmitted:true};
+    if(fbReady)await fbUpd(`games/${game.code}/players/${MY_ID}/rounds/${round}`,upd);
+    else setGame(g=>({...g,players:{...g.players,[MY_ID]:{...g.players[MY_ID],rounds:{...g.players[MY_ID].rounds,[round]:{...g.players[MY_ID].rounds?.[round],...upd}}}}}));
+  }
+
+  async function advanceToBonus(){
+    if(!amHost())return;
+    const upd={phase:'bonus'};
+    if(fbReady)await fbUpd(`games/${game.code}`,upd);
+    setGame(g=>({...g,...upd}));setScreen(SCREENS.BONUS);
+  }
+
+  async function handleSubmitBonus(bonusObj,bonusTotal){
+    const round=game.round;
+    const myData=game.players?.[MY_ID]?.rounds?.[round]||{};
+    const bid=myData.bid??0;const tricks=myData.tricks??0;
+    const roundScore=calcRoundScore(bid,tricks,bonusTotal,round);
+    const newTotal=(game.players?.[MY_ID]?.totalScore??0)+roundScore;
+    const rupd={bonuses:bonusTotal,bonusObj,roundScore,bonusSubmitted:true};
+    if(fbReady){
+      await fbUpd(`games/${game.code}/players/${MY_ID}/rounds/${round}`,rupd);
+      await fbTransact(`games/${game.code}/players/${MY_ID}/totalScore`,cur=>(cur||0)+roundScore);
+    }else{
+      setGame(g=>({...g,players:{...g.players,[MY_ID]:{...g.players[MY_ID],totalScore:newTotal,rounds:{...g.players[MY_ID].rounds,[round]:{...g.players[MY_ID].rounds?.[round],...rupd}}}}}));
+      // local: move to result
+      setTimeout(()=>{setGame(g=>({...g,phase:'result'}));setScreen(SCREENS.RESULT)},200);
+      return;
+    }
+    setScreen(SCREENS.RESULT);
+  }
+
+  async function handleNextRound(){
+    if(!amHost())return;
+    const round=game.round;
+    if(round>=10){
+      const upd={phase:'over'};
+      if(fbReady)await fbUpd(`games/${game.code}`,upd);
+      setGame(g=>({...g,...upd}));setScreen(SCREENS.OVER);
+    }else{
+      const upd={round:round+1,phase:'bid'};
+      if(fbReady)await fbUpd(`games/${game.code}`,upd);
+      setGame(g=>({...g,...upd}));setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);
+    }
+  }
+
+  // Auto-advance when all bids in (online mode, host only)
+  useEffect(()=>{
+    if(!game||!amHost()||game.phase!=='bid'||!fbReady)return;
+    const players=Object.entries(game.players||{});
+    if(players.length>0&&players.every(([,p])=>p.rounds?.[game.round]?.bidSubmitted)){
+      fbUpd(`games/${game.code}`,{phase:'play'});
+    }
+  },[JSON.stringify(game?.players),game?.phase]);
+
+  // Auto-advance when all bonuses in (online mode, host only)
+  // This writes phase:'result' to Firebase so latecomers and reconnecting players
+  // are correctly routed by the Firebase listener — not just the submitting player.
+  useEffect(()=>{
+    if(!game||!amHost()||game.phase!=='bonus'||!fbReady)return;
+    const players=Object.entries(game.players||{});
+    if(players.length>0&&players.every(([,p])=>p.rounds?.[game.round]?.bonusSubmitted)){
+      fbUpd(`games/${game.code}`,{phase:'result'});
+    }
+  },[JSON.stringify(game?.players),game?.phase]);
+
+  function handlePlayAgain(){setGame(null);setMyBid(null);setMyTricks(0);setScreen(SCREENS.HOME)}
+  function handleFbSave(cfg){saveFbCfg(cfg);const db=initFb(cfg);if(db){setFbReady(true);setShowFbSetup(false)}}
+
+  const myRndData=game?.players?.[MY_ID]?.rounds?.[game?.round]||{};
+  const submittedBid=myRndData.bidSubmitted?myRndData.bid:undefined;
+  const submittedTricks=myRndData.trickSubmitted?myRndData.tricks:undefined;
+  const numPlayers=Object.keys(game?.players||{}).length;
+  const inGame=[SCREENS.LOBBY,SCREENS.BID,SCREENS.PLAY,SCREENS.BONUS,SCREENS.RESULT,SCREENS.BOARD,SCREENS.OVER].includes(screen);
+
+  return(<>
+    <Header gameCode={game?.code} inGame={inGame}
+      onBoard={()=>{setPrevScr(screen);setScreen(SCREENS.BOARD)}}
+      onOracle={()=>setShowOracle(true)}
+      onHowTo={()=>setShowHowTo(true)}/>
+
+    <div className="scr">
+      {screen===SCREENS.HOME&&<HomeScreen onCreate={()=>setScreen(SCREENS.CREATE)} onJoin={()=>setScreen(SCREENS.JOIN)} fbReady={fbReady} onSetupFb={()=>setShowFbSetup(true)}/>}
+      {screen===SCREENS.CREATE&&<CreateScreen onBack={()=>setScreen(SCREENS.HOME)} onCreate={handleCreate}/>}
+      {screen===SCREENS.JOIN&&<JoinScreen onBack={()=>setScreen(SCREENS.HOME)} onJoin={handleJoin}/>}
+      {screen===SCREENS.LOBBY&&game&&<LobbyScreen game={game} myId={MY_ID} onStart={handleStartGame} onLeave={handlePlayAgain}/>}
+      {screen===SCREENS.BID&&game&&<BidScreen game={game} myId={MY_ID} myBid={myBid} onSetBid={setMyBid} onSubmitBid={handleSubmitBid} submittedBid={submittedBid} openOracle={()=>setShowOracle(true)}/>}
+      {screen===SCREENS.PLAY&&game&&<PlayScreen game={game} myId={MY_ID} myTricks={myTricks} onSetTricks={setMyTricks} onSubmitTricks={handleSubmitTricks} submittedTricks={submittedTricks} isHost={amHost()} onAdvance={advanceToBonus}/>}
+      {screen===SCREENS.BONUS&&game&&<BonusScreen game={game} myId={MY_ID} advancedRules={game.advancedRules} onSubmitBonus={async(obj,total)=>{await handleSubmitBonus(obj,total)}}/>}
+      {screen===SCREENS.RESULT&&game&&<ResultScreen game={game} myId={MY_ID} isHost={amHost()} onNext={handleNextRound}/>}
+      {screen===SCREENS.BOARD&&game&&<ScoreboardScreen game={game} myId={MY_ID} onBack={prevScr!==SCREENS.BOARD?()=>setScreen(prevScr||SCREENS.BID):null} backLabel="← Back to Game"/>}
+      {screen===SCREENS.OVER&&game&&<GameOverScreen game={game} myId={MY_ID} onPlayAgain={handlePlayAgain}/>}
+    </div>
+
+    {showOracle&&<OracleModal onClose={()=>setShowOracle(false)} currentRound={game?.round||1} numPlayers={numPlayers||4}/>}
+    {showFbSetup&&<FbSetupModal onClose={()=>setShowFbSetup(false)} onSave={handleFbSave} currentConfig={loadFbCfg()}/>}
+    {showHowTo&&<HowToPlayModal onClose={()=>setShowHowTo(false)}/>}
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -929,7 +929,13 @@ function App(){
   const[showFbSetup,setShowFbSetup]=useState(false);
   const[showHowTo,setShowHowTo]=useState(false);
 
-  useEffect(()=>{const cfg=loadFbCfg();if(cfg){const db=initFb(cfg);if(db)setFbReady(true)}},[]);
+  useEffect(()=>{
+    // Built-in config — everyone connects automatically with no setup needed.
+    // localStorage override still works if you ever want to switch databases.
+    const BUILT_IN={apiKey:"AIzaSyD38efOwDaQn9lGX_BMBEcuZDoZSeuCUz4",authDomain:"skull-king-score-tracker.firebaseapp.com",databaseURL:"https://skull-king-score-tracker-default-rtdb.firebaseio.com",projectId:"skull-king-score-tracker",storageBucket:"skull-king-score-tracker.firebasestorage.app",messagingSenderId:"269754888534",appId:"1:269754888534:web:2fcdee6d6043c0d3dfe6f7"};
+    const cfg=loadFbCfg()||BUILT_IN;
+    const db=initFb(cfg);if(db)setFbReady(true);
+  },[]);
 
   // Subscribe to game
   useEffect(()=>{

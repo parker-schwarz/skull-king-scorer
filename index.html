@@ -228,14 +228,6 @@ html,body{height:100%;background:var(--bg);overflow:hidden;-webkit-tap-highlight
 .oracle-title{font-family:var(--f-title);font-style:italic;font-size:22px;color:var(--gold-light);font-weight:400}
 .close-btn{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:7px}
 .close-btn:hover{background:var(--bg3)}
-.camera-wrap{position:relative;flex-shrink:0;height:240px;background:#000;overflow:hidden}
-.cam-video{width:100%;height:100%;object-fit:cover}
-.scan-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
-.scan-skull{font-size:48px;animation:scanpulse 1.2s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(212,160,23,.8))}
-@keyframes scanpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.14);opacity:.7}}
-.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scanmove 1.8s ease-in-out infinite}
-@keyframes scanmove{0%{top:10%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:90%;opacity:0}}
-.scan-txt{font-size:12px;font-weight:700;color:var(--gold-light);letter-spacing:.16em;text-transform:uppercase}
 .oracle-body{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
 .oracle-sec-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
 .oracle-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -716,6 +708,9 @@ function ScoreboardScreen({game,myId,onBack,backLabel}){
   })).sort((a,b)=>b.total-a.total);
   const rounds=Array.from({length:round},(_,i)=>i+1);
   return(<div className="scr board-scr">
+    {onBack&&<div style={{padding:'8px 14px 6px',flexShrink:0,background:'var(--bg2)',borderBottom:'1px solid var(--gold-border)'}}>
+      <button className="back-btn" onClick={onBack}>{backLabel||'← Back to Game'}</button>
+    </div>}
     <div className="board-tabs">
       <div className={`board-tab${view==='total'?' active':''}`} onClick={()=>setView('total')}>Total</div>
       {rounds.map(r=><div key={r} className={`board-tab${view===r?' active':''}`} onClick={()=>setView(r)}>R{r}</div>)}
@@ -749,7 +744,6 @@ function ScoreboardScreen({game,myId,onBack,backLabel}){
         </div>);
       })}
     </div>
-    {onBack&&<div style={{padding:'11px 14px',flexShrink:0}}><button className="btn btn-ghost" onClick={onBack}>{backLabel||'← Back to Game'}</button></div>}
   </div>);
 }
 
@@ -777,55 +771,42 @@ function GameOverScreen({game,myId,onPlayAgain}){
 
 // ── ORACLE MODAL ─────────────────────────────────────────
 function OracleModal({onClose,currentRound,numPlayers}){
-  const videoRef=useRef(null);
-  const[scanning,setScanning]=useState(true);
-  const[camErr,setCamErr]=useState(false);
+  const round=currentRound||1;
   const[hand,setHand]=useState({pirates:0,skullKing:0,mermaids:0,escapes:0,blackHigh:0,blackMid:0,blackLow:0,colorHigh:0,colorMid:0,colorLow:0});
-  useEffect(()=>{
-    let stream=null;
-    async function start(){
-      try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
-        if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play()}
-      }catch{setCamErr(true);setScanning(false)}
-    }
-    start();
-    const t=setTimeout(()=>setScanning(false),2800);
-    return()=>{clearTimeout(t);if(stream)stream.getTracks().forEach(t=>t.stop())};
-  },[]);
-  function adj(key,d,max){setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}))}
   const total=Object.values(hand).reduce((a,b)=>a+b,0);
-  const advice=total>0?oracleAdvice(hand,currentRound||1,numPlayers||4):null;
+  const remaining=round-total;
+  function adj(key,d,max){
+    if(d>0&&total>=round)return;
+    setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}));
+  }
+  const advice=total>0?oracleAdvice(hand,round,numPlayers||4):null;
   const cardRows=[
-    {key:'pirates',label:'⚔️ Pirates',sub:'Beat all suits & trump',max:5},
-    {key:'skullKing',label:'☠️ Skull King',sub:'Beats Pirates (not Mermaids)',max:1},
-    {key:'mermaids',label:'🧜 Mermaids',sub:'Beat Skull King, lose to Pirates',max:2},
-    {key:'blackHigh',label:'🖤 Black 10–14',sub:'Trump suit, high numbers',max:5},
-    {key:'blackMid',label:'🖤 Black 6–9',sub:'Trump suit, mid numbers',max:5},
-    {key:'blackLow',label:'🖤 Black 1–5',sub:'Trump suit, low numbers',max:5},
-    {key:'colorHigh',label:'🎨 Colored 11–14',sub:'Standard suit, high',max:6},
-    {key:'colorMid',label:'🎨 Colored 7–10',sub:'Standard suit, mid',max:6},
-    {key:'colorLow',label:'🎨 Colored 1–6',sub:'Standard suit, low',max:6},
-    {key:'escapes',label:'🌊 Escapes',sub:'Always lose',max:5},
+    {key:'pirates',label:'⚔️ Pirates',sub:'Beat all suits & trump',max:Math.min(5,round)},
+    {key:'skullKing',label:'☠️ Skull King',sub:'Beats Pirates (not Mermaids)',max:Math.min(1,round)},
+    {key:'mermaids',label:'🧜 Mermaids',sub:'Beat Skull King, lose to Pirates',max:Math.min(2,round)},
+    {key:'blackHigh',label:'🖤 Black 10–14',sub:'Trump suit, high numbers',max:Math.min(5,round)},
+    {key:'blackMid',label:'🖤 Black 6–9',sub:'Trump suit, mid numbers',max:Math.min(4,round)},
+    {key:'blackLow',label:'🖤 Black 1–5',sub:'Trump suit, low numbers',max:Math.min(5,round)},
+    {key:'colorHigh',label:'🎨 Colored 11–14',sub:'Standard suit, high',max:Math.min(6,round)},
+    {key:'colorMid',label:'🎨 Colored 7–10',sub:'Standard suit, mid',max:Math.min(6,round)},
+    {key:'colorLow',label:'🎨 Colored 1–6',sub:'Standard suit, low',max:Math.min(6,round)},
+    {key:'escapes',label:'🌊 Escapes',sub:'Always lose',max:Math.min(5,round)},
   ];
   return(<div className="oracle-overlay">
     <div className="oracle-hdr">
-      <div className="oracle-title">🔮 The Oracle Speaks</div>
+      <div style={{display:'flex',flexDirection:'column',gap:2}}>
+        <div className="oracle-title">🔮 The Oracle Speaks</div>
+        <div style={{fontSize:11,color:'var(--text2)',letterSpacing:'.1em',textTransform:'uppercase',fontWeight:700}}>Round {round} · {round} card{round!==1?'s':''} dealt</div>
+      </div>
       <button className="close-btn" onClick={onClose}>✕</button>
     </div>
-    <div className="camera-wrap">
-      {!camErr?<video ref={videoRef} className="cam-video" autoPlay playsInline muted/>
-        :<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',flexDirection:'column',gap:8}}>
-          <span style={{fontSize:40}}>🏴‍☠️</span>
-          <span style={{color:'var(--text2)',fontSize:13,textAlign:'center',padding:'0 20px'}}>Camera unavailable — serve over HTTPS to enable</span>
-        </div>}
-      {scanning&&!camErr&&<div className="scan-overlay">
-        <div className="scan-line"/>
-        <div className="scan-skull">☠️</div>
-        <div className="scan-txt">Reading yer hand…</div>
-      </div>}
-    </div>
     <div className="oracle-body">
-      <div className="oracle-sec-title">Your Cards This Round</div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div className="oracle-sec-title">Your Hand</div>
+        <div style={{fontSize:12,fontWeight:700,color:remaining===0?'var(--green)':remaining<0?'var(--red)':'var(--gold)',background:remaining===0?'rgba(39,174,96,.12)':'var(--gold-dim)',border:`1px solid ${remaining===0?'rgba(39,174,96,.3)':'var(--gold-border)'}`,borderRadius:999,padding:'3px 10px'}}>
+          {total} / {round} cards
+        </div>
+      </div>
       <div className="oracle-grid">
         {cardRows.map(row=>(
           <div key={row.key} className={`ocb${hand[row.key]>0?' has':''}`}>
@@ -836,11 +817,14 @@ function OracleModal({onClose,currentRound,numPlayers}){
             <div className="ocb-ctr">
               <button className="ocb-btn" onClick={()=>adj(row.key,-1,row.max)} disabled={hand[row.key]<=0}>−</button>
               <div className="ocb-n">{hand[row.key]}</div>
-              <button className="ocb-btn" onClick={()=>adj(row.key,1,row.max)}>+</button>
+              <button className="ocb-btn" onClick={()=>adj(row.key,1,row.max)} disabled={hand[row.key]>=row.max||remaining<=0}>+</button>
             </div>
           </div>
         ))}
       </div>
+      {remaining>0&&<div style={{textAlign:'center',fontSize:12,color:'var(--text2)',fontStyle:'italic'}}>
+        {remaining} more card{remaining!==1?'s':''} to enter
+      </div>}
       <div className="oracle-advice">
         <div className="adv-skull">☠️</div>
         {advice?(
@@ -849,7 +833,7 @@ function OracleModal({onClose,currentRound,numPlayers}){
             <div className="adv-bid-num">{advice.bid}</div>
             <div className="adv-txt">"{advice.text}"</div>
           </>
-        ):<div className="adv-empty">Enter yer cards above and the Oracle shall divine yer fate…</div>}
+        ):<div className="adv-empty">Enter yer {round} card{round!==1?'s':''} above and the Oracle shall divine yer fate…</div>}
       </div>
     </div>
   </div>);
@@ -1073,7 +1057,7 @@ function App(){
 
   return(<>
     <Header gameCode={game?.code} inGame={inGame}
-      onBoard={()=>{setPrevScr(screen);setScreen(SCREENS.BOARD)}}
+      onBoard={()=>{if(screen!==SCREENS.BOARD){setPrevScr(screen);setScreen(SCREENS.BOARD)}}}
       onOracle={()=>setShowOracle(true)}
       onHowTo={()=>setShowHowTo(true)}/>
 

@@ -544,6 +544,8 @@ function LobbyScreen({game,myId,onStart,onLeave}){
       </div>
     ):<Waiting text="Waiting for the Captain to start…"/>}
   </div>);
+}
+
 // ── SPECTATING ─────────────────────────────────────────────────────────────────────────
 function SpectatingScreen({game,myId,onLeave}){
   const round=game.round||1;
@@ -559,9 +561,6 @@ function SpectatingScreen({game,myId,onLeave}){
     <Waiting text="Waiting for next round…"/>
     <button className="btn btn-outline btn-sm" onClick={onLeave} style={{marginTop:8}}>🚪 Leave Game</button>
   </div>);}
-
-
-}
 
 // ── BID ──────────────────────────────────────────────────
 function BidScreen({game,myId,myBid,onSetBid,onSubmitBid,submittedBid,openOracle}){

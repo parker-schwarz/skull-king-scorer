@@ -264,6 +264,14 @@ html,body{height:100%;background:var(--bg);overflow:hidden;-webkit-tap-highlight
 </head>
 <body>
 <div id="root"></div>
+<script>
+// Show errors visibly instead of blank screen
+window.onerror = function(msg, src, line, col, err) {
+  var d = document.getElementById('root');
+  if(d) d.innerHTML = '<div style="background:#1a0505;color:#ff6b6b;padding:20px;font-family:monospace;font-size:13px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:9999"><b>JS ERROR (line '+line+')::</b>\n'+msg+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
+  return false;
+};
+</script>
 <script type="text/babel">
 const{useState,useEffect,useRef,useCallback}=React;
 
@@ -395,12 +403,13 @@ async function fbUpd(p,v){if(_db)await _db.ref(p).update(v)}
 function fbOn(p,cb){if(!_db)return()=>{};const r=_db.ref(p);r.on('value',s=>cb(s.val()));return()=>r.off('value')}
 async function fbGet(p){if(!_db)return null;return(await _db.ref(p).once('value')).val()}
 async function fbTransact(p,fn){if(!_db)return;return _db.ref(p).transaction(fn)}
+async function fbRemove(p){if(_db)await _db.ref(p).remove()}
 
 // ── Shared components ────────────────────────────────────
 function Waiting({text}){return(<div className="waiting"><div className="waiting-dots"><span/><span/><span/></div><div className="waiting-txt">{text||'Waiting…'}</div></div>)}
 function Toggle({on,onToggle}){return<div className={`tog ${on?'on':''}`} onClick={onToggle}/>}
 
-function Header({gameCode,inGame,onBoard,onOracle,onHowTo}){
+function Header({gameCode,inGame,onBoard,onOracle,onHowTo,onLeave}){
   const lastTap=useRef(0);
   function handleSkullTap(e){
     const now=Date.now();
@@ -423,6 +432,7 @@ function Header({gameCode,inGame,onBoard,onOracle,onHowTo}){
     <div className="hdr-btns">
       {inGame&&<button className="icon-btn" title="Scoreboard" onClick={onBoard}>📊</button>}
       <button className="icon-btn" title="How to Play" onClick={onHowTo}>❓</button>
+      {inGame&&<button className="icon-btn" title="Leave / End Game" onClick={onLeave}>🚪</button>}
     </div>
   </div>);
 }
@@ -534,13 +544,31 @@ function LobbyScreen({game,myId,onStart,onLeave}){
       </div>
     ):<Waiting text="Waiting for the Captain to start…"/>}
   </div>);
+// ── SPECTATING ─────────────────────────────────────────────────────────────────────────
+function SpectatingScreen({game,myId,onLeave}){
+  const round=game.round||1;
+  const myPlayer=game.players?.[myId];
+  const joinOn=myPlayer?.joinedRound||round+1;
+  return(<div className="scr" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:20,padding:'32px 28px',textAlign:'center'}}>
+    <div style={{fontSize:60}}>⚓</div>
+    <div style={{fontFamily:'var(--f-title)',fontStyle:'italic',fontSize:30,color:'var(--gold-light)',letterSpacing:'-.02em'}}>Joining the Crew</div>
+    <div style={{fontSize:15,color:'var(--text2)',lineHeight:1.7}}>
+      Round <strong style={{color:'var(--text)'}}>{round}</strong> is in progress.<br/>
+      You’ll join the action on <strong style={{color:'var(--gold-light)'}}>Round {joinOn}</strong>.
+    </div>
+    <Waiting text="Waiting for next round…"/>
+    <button className="btn btn-outline btn-sm" onClick={onLeave} style={{marginTop:8}}>🚪 Leave Game</button>
+  </div>);}
+
+
 }
 
 // ── BID ──────────────────────────────────────────────────
 function BidScreen({game,myId,myBid,onSetBid,onSubmitBid,submittedBid,openOracle}){
   const round=game.round||1;
   const players=Object.entries(game.players||{});
-  const subCount=players.filter(([,p])=>p.rounds?.[round]?.bidSubmitted).length;
+  const activePlayers=players.filter(([,p])=>!p.joinedRound||p.joinedRound<=round);
+  const subCount=activePlayers.filter(([,p])=>p.rounds?.[round]?.bidSubmitted).length;
   return(<div className="scr bid-scr">
     <div className="rnd-hdr">
       <div className="rnd-lbl">Round</div>
@@ -551,7 +579,7 @@ function BidScreen({game,myId,myBid,onSetBid,onSubmitBid,submittedBid,openOracle
       <div style={{textAlign:'center',display:'flex',flexDirection:'column',gap:12,alignItems:'center',flex:1,justifyContent:'center'}}>
         <div style={{fontSize:15,color:'var(--text2)'}}>Your bid:</div>
         <div className={`bid-big${submittedBid===0?' bid-zero':''}`}>{submittedBid}</div>
-        <div className="players-sub">{subCount} / {players.length} bids locked in</div>
+        <div className="players-sub">{subCount} / {activePlayers.length} bids locked in</div>
         <Waiting text="Waiting for all pirates to bid…"/>
       </div>
     ):(
@@ -582,7 +610,8 @@ function PlayScreen({game,myId,myTricks,onSetTricks,onSubmitTricks,submittedTric
   const myData=game.players?.[myId]?.rounds?.[round]||{};
   const bid=myData.bid??0;
   const players=Object.entries(game.players||{});
-  const subCount=players.filter(([,p])=>p.rounds?.[round]?.trickSubmitted).length;
+  const activePlayers=players.filter(([,p])=>!p.joinedRound||p.joinedRound<=round);
+  const subCount=activePlayers.filter(([,p])=>p.rounds?.[round]?.trickSubmitted).length;
   const diff=myTricks-bid;
   const status=bid===0?(myTricks===0?'ts-good':'ts-bad'):diff===0?'ts-good':diff!==0?'ts-bad':'ts-zero';
   const statusTxt=bid===0?(myTricks===0?'0 bid — stay clean!':'⚠️ You took a trick!'):(diff===0?'✓ On target!':diff>0?`▲ Over by ${diff}`:`▽ Under by ${Math.abs(diff)}`);
@@ -595,8 +624,8 @@ function PlayScreen({game,myId,myTricks,onSetTricks,onSubmitTricks,submittedTric
       <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12}}>
         <div style={{fontSize:15,color:'var(--text2)'}}>You took:</div>
         <div className="trick-big">{submittedTricks}</div>
-        <div className="players-sub">{subCount} / {players.length} submitted</div>
-        {isHost&&subCount===players.length?(
+        <div className="players-sub">{subCount} / {activePlayers.length} submitted</div>
+        {isHost&&subCount===activePlayers.length?(
           <button className="btn btn-gold" onClick={onAdvance} style={{marginTop:10}}>📊 End Round → Bonuses</button>
         ):<Waiting text="Round in progress…"/>}
       </div>
@@ -676,7 +705,8 @@ function ResultScreen({game,myId,isHost,onNext}){
   const bidPts=calcBidPts(bid,tricks,round);
   const correct=bidOK(bid,tricks);
   const players=Object.entries(game.players||{});
-  const allIn=players.every(([,p])=>p.rounds?.[round]?.bonusSubmitted);
+  const activePlayers=players.filter(([,p])=>!p.joinedRound||p.joinedRound<=round);
+  const allIn=activePlayers.length>0&&activePlayers.every(([,p])=>p.rounds?.[round]?.bonusSubmitted);
   return(<div className="scr result-scr">
     <div className="result-title">{correct?'⚓ Well sailed!':'💀 Overboard!'}</div>
     <div className="score-bd">
@@ -693,10 +723,28 @@ function ResultScreen({game,myId,isHost,onNext}){
       <div className="rt-lbl">Running Total</div>
       <div className="rt-val">{total}</div>
     </div>
-    <div className="players-sub">{players.filter(([,p])=>p.rounds?.[round]?.bonusSubmitted).length} / {players.length} submitted</div>
+    <div className="players-sub">{activePlayers.filter(([,p])=>p.rounds?.[round]?.bonusSubmitted).length} / {activePlayers.length} submitted</div>
+    {allIn&&(
+      <div style={{width:'100%'}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:'.15em',textTransform:'uppercase',color:'var(--text2)',marginBottom:8}}>⚔️ Round {round} Scores</div>
+        <div className="score-bd">
+          {[...activePlayers].sort((a,b)=>(b[1].rounds?.[round]?.roundScore||0)-(a[1].rounds?.[round]?.roundScore||0)).map(([pid,p])=>{
+            const rd=p.rounds?.[round]||{};
+            const rs=rd.roundScore??0;
+            return(<div key={pid} className="score-row">
+              <span className="score-lbl" style={{display:'flex',flexDirection:'column',gap:2}}>
+                <strong style={{color:pid===myId?'var(--gold-light)':'var(--text)',fontSize:14}}>{p.name}{pid===myId?' (you)':''}</strong>
+                <span style={{fontSize:11,color:'var(--text3)'}}>bid {rd.bid??'—'} · took {rd.tricks??'—'}</span>
+              </span>
+              <span className={`score-val ${rs>0?'s-pos':rs<0?'s-neg':'s-neu'}`}>{rs>0?'+':''}{rs}</span>
+            </div>);
+          })}
+        </div>
+      </div>
+    )}
     {isHost&&allIn?(
       <button className="btn btn-gold" onClick={onNext}>{round>=10?'🏆 Final Scores':`⚔️ Round ${round+1} →`}</button>
-    ):isHost?<Waiting text="Waiting for all pirates to submit…"/>:<Waiting text="Waiting for Captain to advance…"/>}
+    ):!allIn?<Waiting text="Waiting for all pirates to submit…"/>:<Waiting text="Waiting for Captain to advance…"/>}
   </div>);
 }
 
@@ -914,9 +962,25 @@ function HowToPlayModal({onClose}){
   </div>);
 }
 
+// ── LEAVE CONFIRM ─────────────────────────────────────────────────────────────────────────
+function LeaveConfirmModal({isHost,onConfirm,onCancel}){
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onCancel()}>
+    <div className="modal-sheet">
+      <div className="modal-title">{isHost?'⚠️ End the Voyage?':'🚪 Abandon Ship?'}</div>
+      <div className="modal-body">
+        {isHost
+          ?'As Captain, ending the game will show final scores to everyone immediately.'
+          :"You’ll be removed from the game. Your score stays on the scoreboard."}
+      </div>
+      <button className="btn btn-danger" onClick={onConfirm}>{isHost?'☠️ End Game for All':'🚪 Leave Game'}</button>
+      <button className="btn btn-ghost" onClick={onCancel}>Stay Aboard</button>
+    </div>
+  </div>);}
+
+
 // ── APP ──────────────────────────────────────────────────
 const MY_ID=getMyId();
-const SCREENS={HOME:'home',CREATE:'create',JOIN:'join',LOBBY:'lobby',BID:'bid',PLAY:'play',BONUS:'bonus',RESULT:'result',BOARD:'board',OVER:'over'};
+const SCREENS={HOME:'home',CREATE:'create',JOIN:'join',LOBBY:'lobby',BID:'bid',PLAY:'play',BONUS:'bonus',RESULT:'result',BOARD:'board',OVER:'over',SPECTATING:'spectating'};
 
 function App(){
   const[screen,setScreen]=useState(SCREENS.HOME);
@@ -928,6 +992,7 @@ function App(){
   const[showOracle,setShowOracle]=useState(false);
   const[showFbSetup,setShowFbSetup]=useState(false);
   const[showHowTo,setShowHowTo]=useState(false);
+  const[showLeaveConfirm,setShowLeaveConfirm]=useState(false);
 
   useEffect(()=>{
     // Built-in config — everyone connects automatically with no setup needed.
@@ -943,15 +1008,17 @@ function App(){
     const saved=localStorage.getItem('sk_session');
     if(!saved)return;
     let code;
-    try{({code}=JSON.parse(saved));}catch{localStorage.removeItem('sk_session');return;}
+    try{const p=JSON.parse(saved);code=p.code;}catch(e){localStorage.removeItem('sk_session');return;}
     fbGet(`games/${code}`).then(data=>{
       if(data&&data.players&&data.players[MY_ID]){
         setGame(data);
         const ph=data.phase;
+        const myPlayer=data.players?.[MY_ID];
+        const isSpectating=myPlayer?.joinedRound&&myPlayer.joinedRound>data.round;
         if(ph==='lobby')setScreen(SCREENS.LOBBY);
-        else if(ph==='bid'){setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);}
-        else if(ph==='play'){setMyTricks(0);setScreen(SCREENS.PLAY);}
-        else if(ph==='bonus')setScreen(SCREENS.BONUS);
+        else if(ph==='bid'){if(isSpectating){setScreen(SCREENS.SPECTATING);}else{setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);}}
+        else if(ph==='play'){if(isSpectating){setScreen(SCREENS.SPECTATING);}else{setMyTricks(0);setScreen(SCREENS.PLAY);}}
+        else if(ph==='bonus'){if(isSpectating){setScreen(SCREENS.SPECTATING);}else setScreen(SCREENS.BONUS);}
         else if(ph==='result')setScreen(SCREENS.RESULT);
         else if(ph==='over')setScreen(SCREENS.OVER);
       }else{
@@ -968,10 +1035,14 @@ function App(){
       const old=game;
       setGame(data);
       if(data.phase!==old?.phase||data.round!==old?.round){
-        if(data.phase==='bid'){setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID)}
-        else if(data.phase==='play'){setScreen(SCREENS.PLAY)}
-        else if(data.phase==='bonus'){setScreen(SCREENS.BONUS)}
-        else if(data.phase==='result'){setScreen(SCREENS.RESULT)}
+        const myPlayer=data.players?.[MY_ID];
+        const isSpectating=myPlayer?.joinedRound&&myPlayer.joinedRound>data.round;
+        if(data.phase==='bid'){
+          if(isSpectating){setScreen(SCREENS.SPECTATING);}
+          else{setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);}
+        }else if(data.phase==='play'&&!isSpectating){setScreen(SCREENS.PLAY)}
+        else if(data.phase==='bonus'&&!isSpectating){setScreen(SCREENS.BONUS)}
+        else if(data.phase==='result'&&!isSpectating){setScreen(SCREENS.RESULT)}
         else if(data.phase==='over'){setScreen(SCREENS.OVER)}
       }
     });
@@ -991,12 +1062,27 @@ function App(){
     if(!fbReady)return{error:'Online mode required to join. Set up Firebase first (tap the status badge on the home screen).'};
     const ex=await fbGet(`games/${code}`);
     if(!ex)return{error:'Game not found. Check the code and try again.'};
-    if(ex.phase!=='lobby')return{error:'This game has already started.'};
-    await fbUpd(`games/${code}/players/${MY_ID}`,{name,totalScore:0,rounds:{}});
-    setGame({...ex,players:{...ex.players,[MY_ID]:{name,totalScore:0,rounds:{}}}});
+    if(ex.phase==='over')return{error:'This game has already ended.'};
+    const isMidGame=ex.phase!=='lobby';
+    const playerData={name,totalScore:0,rounds:{},...(isMidGame?{joinedRound:(ex.round||1)+1}:{})};
+    await fbUpd(`games/${code}/players/${MY_ID}`,playerData);
+    setGame({...ex,players:{...ex.players,[MY_ID]:playerData}});
     localStorage.setItem('sk_session',JSON.stringify({code}));
-    setScreen(SCREENS.LOBBY);
+    if(isMidGame)setScreen(SCREENS.SPECTATING);else setScreen(SCREENS.LOBBY);
     return{ok:true};
+  }
+
+  async function handleLeave(){
+    setShowLeaveConfirm(false);
+    if(amHost()){
+      const upd={phase:'over'};
+      if(fbReady)await fbUpd(`games/${game.code}`,upd);
+      setGame(g=>({...g,...upd}));setScreen(SCREENS.OVER);
+    }else{
+      if(fbReady)await fbRemove(`games/${game.code}/players/${MY_ID}`);
+      localStorage.removeItem('sk_session');
+      setGame(null);setMyBid(null);setMyTricks(0);setScreen(SCREENS.HOME);
+    }
   }
 
   async function handleStartGame(){
@@ -1070,8 +1156,8 @@ function App(){
   // Auto-advance when all bids in (online mode, host only)
   useEffect(()=>{
     if(!game||!amHost()||game.phase!=='bid'||!fbReady)return;
-    const players=Object.entries(game.players||{});
-    if(players.length>0&&players.every(([,p])=>p.rounds?.[game.round]?.bidSubmitted)){
+    const activePlayers=Object.entries(game.players||{}).filter(([,p])=>!p.joinedRound||p.joinedRound<=game.round);
+    if(activePlayers.length>0&&activePlayers.every(([,p])=>p.rounds?.[game.round]?.bidSubmitted)){
       fbUpd(`games/${game.code}`,{phase:'play'});
     }
   },[JSON.stringify(game?.players),game?.phase]);
@@ -1081,8 +1167,8 @@ function App(){
   // are correctly routed by the Firebase listener — not just the submitting player.
   useEffect(()=>{
     if(!game||!amHost()||game.phase!=='bonus'||!fbReady)return;
-    const players=Object.entries(game.players||{});
-    if(players.length>0&&players.every(([,p])=>p.rounds?.[game.round]?.bonusSubmitted)){
+    const activePlayers=Object.entries(game.players||{}).filter(([,p])=>!p.joinedRound||p.joinedRound<=game.round);
+    if(activePlayers.length>0&&activePlayers.every(([,p])=>p.rounds?.[game.round]?.bonusSubmitted)){
       fbUpd(`games/${game.code}`,{phase:'result'});
     }
   },[JSON.stringify(game?.players),game?.phase]);
@@ -1094,7 +1180,7 @@ function App(){
   const submittedBid=myRndData.bidSubmitted?myRndData.bid:undefined;
   const submittedTricks=myRndData.trickSubmitted?myRndData.tricks:undefined;
   const numPlayers=Object.keys(game?.players||{}).length;
-  const inGame=[SCREENS.LOBBY,SCREENS.BID,SCREENS.PLAY,SCREENS.BONUS,SCREENS.RESULT,SCREENS.BOARD,SCREENS.OVER].includes(screen);
+  const inGame=[SCREENS.LOBBY,SCREENS.BID,SCREENS.PLAY,SCREENS.BONUS,SCREENS.RESULT,SCREENS.BOARD,SCREENS.OVER,SCREENS.SPECTATING].includes(screen);
 
   // Warn before leaving mid-game
   useEffect(()=>{
@@ -1108,13 +1194,15 @@ function App(){
     <Header gameCode={game?.code} inGame={inGame}
       onBoard={()=>{if(screen!==SCREENS.BOARD){setPrevScr(screen);setScreen(SCREENS.BOARD)}}}
       onOracle={()=>setShowOracle(true)}
-      onHowTo={()=>setShowHowTo(true)}/>
+      onHowTo={()=>setShowHowTo(true)}
+      onLeave={()=>setShowLeaveConfirm(true)}/>
 
     <div className="scr">
       {screen===SCREENS.HOME&&<HomeScreen onCreate={()=>setScreen(SCREENS.CREATE)} onJoin={()=>setScreen(SCREENS.JOIN)} fbReady={fbReady} onSetupFb={()=>setShowFbSetup(true)}/>}
       {screen===SCREENS.CREATE&&<CreateScreen onBack={()=>setScreen(SCREENS.HOME)} onCreate={handleCreate}/>}
       {screen===SCREENS.JOIN&&<JoinScreen onBack={()=>setScreen(SCREENS.HOME)} onJoin={handleJoin}/>}
       {screen===SCREENS.LOBBY&&game&&<LobbyScreen game={game} myId={MY_ID} onStart={handleStartGame} onLeave={handlePlayAgain}/>}
+      {screen===SCREENS.SPECTATING&&game&&<SpectatingScreen game={game} myId={MY_ID} onLeave={()=>setShowLeaveConfirm(true)}/>}
       {screen===SCREENS.BID&&game&&<BidScreen game={game} myId={MY_ID} myBid={myBid} onSetBid={setMyBid} onSubmitBid={handleSubmitBid} submittedBid={submittedBid} openOracle={()=>setShowOracle(true)}/>}
       {screen===SCREENS.PLAY&&game&&<PlayScreen game={game} myId={MY_ID} myTricks={myTricks} onSetTricks={setMyTricks} onSubmitTricks={handleSubmitTricks} submittedTricks={submittedTricks} isHost={amHost()} onAdvance={advanceToBonus}/>}
       {screen===SCREENS.BONUS&&game&&<BonusScreen game={game} myId={MY_ID} advancedRules={game.advancedRules} onSubmitBonus={async(obj,total)=>{await handleSubmitBonus(obj,total)}}/>}
@@ -1126,6 +1214,7 @@ function App(){
     {showOracle&&<OracleModal onClose={()=>setShowOracle(false)} currentRound={game?.round||1} numPlayers={numPlayers||4}/>}
     {showFbSetup&&<FbSetupModal onClose={()=>setShowFbSetup(false)} onSave={handleFbSave} currentConfig={loadFbCfg()}/>}
     {showHowTo&&<HowToPlayModal onClose={()=>setShowHowTo(false)}/>}
+    {showLeaveConfirm&&<LeaveConfirmModal isHost={amHost()} onConfirm={handleLeave} onCancel={()=>setShowLeaveConfirm(false)}/>}
   </>);
 }
 

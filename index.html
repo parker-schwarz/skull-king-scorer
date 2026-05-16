@@ -824,7 +824,7 @@ function OracleModal({onClose,currentRound,numPlayers}){
         <div key={g.title} style={{display:'flex',flexDirection:'column',gap:7}}>
           <div className="oracle-sec-title">{g.title}</div>
           {g.cards.map(row=>(
-            <div key={row.key} style={{display:'flex',alignItems:'center',background:'var(--bg3)',border:`1.5px solid ${hand[row.key]>0?'var(--gold)':'var(--gold-border)'}`,borderRadius:'var(--radius-sm)',padding:'10px 13px',gap:10,transition:'border-color .15s',background:hand[row.key]>0?'var(--gold-dim)':'var(--bg3)'}}>
+            <div key={row.key} style={{display:'flex',alignItems:'center',background:hand[row.key]>0?'var(--gold-dim)':'var(--bg3)',border:`1.5px solid ${hand[row.key]>0?'var(--gold)':'var(--gold-border)'}`,borderRadius:'var(--radius-sm)',padding:'10px 13px',gap:10,transition:'border-color .15s, background .15s'}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:600,color:'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.label}</div>
                 <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>{row.sub}</div>
@@ -842,7 +842,7 @@ function OracleModal({onClose,currentRound,numPlayers}){
         {advice?(
           <>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:'.2em',textTransform:'uppercase',color:'var(--text2)',marginBottom:6}}>Oracle Recommends</div>
-            <div style={{fontFamily:'var(--f-title)',fontSize:96px,color:'var(--gold-light)',lineHeight:1,fontWeight:600,textShadow:'0 0 40px rgba(212,160,23,.5)'}}>{advice.bid}</div>
+            <div style={{fontFamily:'var(--f-title)',fontSize:96,color:'var(--gold-light)',lineHeight:1,fontWeight:600,textShadow:'0 0 40px rgba(212,160,23,.5)'}}>{advice.bid}</div>
             <div style={{fontSize:13,color:'var(--text)',marginTop:10,lineHeight:1.6,fontStyle:'italic'}}>"{advice.text}"</div>
           </>
         ):(

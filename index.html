@@ -406,6 +406,7 @@ function Header({gameCode,inGame,onBoard,onOracle,onHowTo}){
     const now=Date.now();
     if(now-lastTap.current<320){
       e.preventDefault();
+      e.stopPropagation();
       onOracle();
     }
     lastTap.current=now;
@@ -414,8 +415,8 @@ function Header({gameCode,inGame,onBoard,onOracle,onHowTo}){
     <span className="hdr-title">
       <span
         onTouchEnd={handleSkullTap}
-        onDoubleClick={onOracle}
-        style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none'}}
+        onDoubleClick={e=>{e.preventDefault();onOracle();}}
+        style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none',touchAction:'manipulation'}}
       >☠️</span>{' '}Skull King
     </span>
     {gameCode&&<span className="hdr-code">{gameCode}</span>}
@@ -780,60 +781,75 @@ function OracleModal({onClose,currentRound,numPlayers}){
     setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}));
   }
   const advice=total>0?oracleAdvice(hand,round,numPlayers||4):null;
-  const cardRows=[
-    {key:'pirates',label:'⚔️ Pirates',sub:'Beat all suits & trump',max:Math.min(5,round)},
-    {key:'skullKing',label:'☠️ Skull King',sub:'Beats Pirates (not Mermaids)',max:Math.min(1,round)},
-    {key:'mermaids',label:'🧜 Mermaids',sub:'Beat Skull King, lose to Pirates',max:Math.min(2,round)},
-    {key:'blackHigh',label:'🖤 Black 10–14',sub:'Trump suit, high numbers',max:Math.min(5,round)},
-    {key:'blackMid',label:'🖤 Black 6–9',sub:'Trump suit, mid numbers',max:Math.min(4,round)},
-    {key:'blackLow',label:'🖤 Black 1–5',sub:'Trump suit, low numbers',max:Math.min(5,round)},
-    {key:'colorHigh',label:'🎨 Colored 11–14',sub:'Standard suit, high',max:Math.min(6,round)},
-    {key:'colorMid',label:'🎨 Colored 7–10',sub:'Standard suit, mid',max:Math.min(6,round)},
-    {key:'colorLow',label:'🎨 Colored 1–6',sub:'Standard suit, low',max:Math.min(6,round)},
-    {key:'escapes',label:'🌊 Escapes',sub:'Always lose',max:Math.min(5,round)},
+  const groups=[
+    {title:'Special Cards',cards:[
+      {key:'pirates',label:'Pirates',sub:'Beat all suits & trump',max:Math.min(5,round)},
+      {key:'skullKing',label:'Skull King',sub:'Beats Pirates (not Mermaids)',max:Math.min(1,round)},
+      {key:'mermaids',label:'Mermaids',sub:'Beat Skull King, lose to Pirates',max:Math.min(2,round)},
+      {key:'escapes',label:'Escapes',sub:'Always lose a trick',max:Math.min(5,round)},
+    ]},
+    {title:'Black Trump',cards:[
+      {key:'blackHigh',label:'Black 10–14',sub:'High trump',max:Math.min(5,round)},
+      {key:'blackMid',label:'Black 6–9',sub:'Mid trump',max:Math.min(4,round)},
+      {key:'blackLow',label:'Black 1–5',sub:'Low trump',max:Math.min(5,round)},
+    ]},
+    {title:'Colored Suits',cards:[
+      {key:'colorHigh',label:'Colored 11–14',sub:'High standard',max:Math.min(6,round)},
+      {key:'colorMid',label:'Colored 7–10',sub:'Mid standard',max:Math.min(6,round)},
+      {key:'colorLow',label:'Colored 1–6',sub:'Low standard',max:Math.min(6,round)},
+    ]},
   ];
+  const pct=round>0?Math.min(100,(total/round)*100):0;
+  const barColor=total===round?'var(--green)':remaining<0?'var(--red)':'var(--gold)';
+  const countColor=total===round?'var(--green)':remaining<0?'var(--red)':'var(--gold)';
   return(<div className="oracle-overlay">
     <div className="oracle-hdr">
       <div style={{display:'flex',flexDirection:'column',gap:2}}>
-        <div className="oracle-title">🔮 The Oracle Speaks</div>
+        <div className="oracle-title">☠️ Ask the Oracle</div>
         <div style={{fontSize:11,color:'var(--text2)',letterSpacing:'.1em',textTransform:'uppercase',fontWeight:700}}>Round {round} · {round} card{round!==1?'s':''} dealt</div>
       </div>
       <button className="close-btn" onClick={onClose}>✕</button>
     </div>
+    <div style={{padding:'12px 18px 0',flexShrink:0,background:'var(--bg)',borderBottom:'1px solid var(--gold-border)'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text2)'}}>Cards Entered</div>
+        <div style={{fontSize:13,fontWeight:700,color:countColor}}>{total} / {round}</div>
+      </div>
+      <div style={{height:6,background:'var(--bg3)',borderRadius:999,overflow:'hidden',marginBottom:12}}>
+        <div style={{height:'100%',width:`${pct}%`,background:barColor,borderRadius:999,transition:'width .18s'}}/>
+      </div>
+    </div>
     <div className="oracle-body">
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div className="oracle-sec-title">Your Hand</div>
-        <div style={{fontSize:12,fontWeight:700,color:remaining===0?'var(--green)':remaining<0?'var(--red)':'var(--gold)',background:remaining===0?'rgba(39,174,96,.12)':'var(--gold-dim)',border:`1px solid ${remaining===0?'rgba(39,174,96,.3)':'var(--gold-border)'}`,borderRadius:999,padding:'3px 10px'}}>
-          {total} / {round} cards
+      {groups.map(g=>(
+        <div key={g.title} style={{display:'flex',flexDirection:'column',gap:7}}>
+          <div className="oracle-sec-title">{g.title}</div>
+          {g.cards.map(row=>(
+            <div key={row.key} style={{display:'flex',alignItems:'center',background:'var(--bg3)',border:`1.5px solid ${hand[row.key]>0?'var(--gold)':'var(--gold-border)'}`,borderRadius:'var(--radius-sm)',padding:'10px 13px',gap:10,transition:'border-color .15s',background:hand[row.key]>0?'var(--gold-dim)':'var(--bg3)'}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:600,color:'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.label}</div>
+                <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>{row.sub}</div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                <button className="ocb-btn" onClick={()=>adj(row.key,-1,row.max)} disabled={hand[row.key]<=0}>−</button>
+                <div style={{fontSize:18,fontWeight:700,color:'var(--text)',minWidth:22,textAlign:'center'}}>{hand[row.key]}</div>
+                <button className="ocb-btn" onClick={()=>adj(row.key,1,row.max)} disabled={hand[row.key]>=row.max||remaining<=0}>+</button>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-      <div className="oracle-grid">
-        {cardRows.map(row=>(
-          <div key={row.key} className={`ocb${hand[row.key]>0?' has':''}`}>
-            <div className="ocb-info">
-              <div className="ocb-name">{row.label}</div>
-              <div className="ocb-sub">{row.sub}</div>
-            </div>
-            <div className="ocb-ctr">
-              <button className="ocb-btn" onClick={()=>adj(row.key,-1,row.max)} disabled={hand[row.key]<=0}>−</button>
-              <div className="ocb-n">{hand[row.key]}</div>
-              <button className="ocb-btn" onClick={()=>adj(row.key,1,row.max)} disabled={hand[row.key]>=row.max||remaining<=0}>+</button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {remaining>0&&<div style={{textAlign:'center',fontSize:12,color:'var(--text2)',fontStyle:'italic'}}>
-        {remaining} more card{remaining!==1?'s':''} to enter
-      </div>}
-      <div className="oracle-advice">
-        <div className="adv-skull">☠️</div>
+      ))}
+      <div style={{background:'linear-gradient(135deg,#150f00,#0d0b1a)',border:`1.5px solid ${advice?'var(--gold-border)':'rgba(255,255,255,.07)'}`,borderRadius:'var(--radius)',padding:'22px 18px',textAlign:'center'}}>
         {advice?(
           <>
-            <div className="adv-bid-lbl">The Oracle recommends</div>
-            <div className="adv-bid-num">{advice.bid}</div>
-            <div className="adv-txt">"{advice.text}"</div>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:'.2em',textTransform:'uppercase',color:'var(--text2)',marginBottom:6}}>Oracle Recommends</div>
+            <div style={{fontFamily:'var(--f-title)',fontSize:96px,color:'var(--gold-light)',lineHeight:1,fontWeight:600,textShadow:'0 0 40px rgba(212,160,23,.5)'}}>{advice.bid}</div>
+            <div style={{fontSize:13,color:'var(--text)',marginTop:10,lineHeight:1.6,fontStyle:'italic'}}>"{advice.text}"</div>
           </>
-        ):<div className="adv-empty">Enter yer {round} card{round!==1?'s':''} above and the Oracle shall divine yer fate…</div>}
+        ):(
+          <div style={{fontSize:13,color:'var(--text2)',fontStyle:'italic',padding:'10px 0'}}>
+            Enter your {round} card{round!==1?'s':''} above and the Oracle shall divine your fate…
+          </div>
+        )}
       </div>
     </div>
   </div>);
@@ -921,6 +937,29 @@ function App(){
     const db=initFb(cfg);if(db)setFbReady(true);
   },[]);
 
+  // Auto-rejoin saved session after Firebase ready
+  useEffect(()=>{
+    if(!fbReady)return;
+    const saved=localStorage.getItem('sk_session');
+    if(!saved)return;
+    let code;
+    try{({code}=JSON.parse(saved));}catch{localStorage.removeItem('sk_session');return;}
+    fbGet(`games/${code}`).then(data=>{
+      if(data&&data.players&&data.players[MY_ID]){
+        setGame(data);
+        const ph=data.phase;
+        if(ph==='lobby')setScreen(SCREENS.LOBBY);
+        else if(ph==='bid'){setMyBid(null);setMyTricks(0);setScreen(SCREENS.BID);}
+        else if(ph==='play'){setMyTricks(0);setScreen(SCREENS.PLAY);}
+        else if(ph==='bonus')setScreen(SCREENS.BONUS);
+        else if(ph==='result')setScreen(SCREENS.RESULT);
+        else if(ph==='over')setScreen(SCREENS.OVER);
+      }else{
+        localStorage.removeItem('sk_session');
+      }
+    }).catch(()=>localStorage.removeItem('sk_session'));
+  },[fbReady]);
+
   // Subscribe to game
   useEffect(()=>{
     if(!game?.code||!fbReady)return;
@@ -944,6 +983,7 @@ function App(){
     const code=mkCode();
     const g={code,hostId:MY_ID,round:1,phase:'lobby',advancedRules:adv,players:{[MY_ID]:{name,totalScore:0,rounds:{}}}};
     if(fbReady)await fbSet(`games/${code}`,g);
+    localStorage.setItem('sk_session',JSON.stringify({code}));
     setGame(g);setScreen(SCREENS.LOBBY);
   }
 
@@ -954,6 +994,7 @@ function App(){
     if(ex.phase!=='lobby')return{error:'This game has already started.'};
     await fbUpd(`games/${code}/players/${MY_ID}`,{name,totalScore:0,rounds:{}});
     setGame({...ex,players:{...ex.players,[MY_ID]:{name,totalScore:0,rounds:{}}}});
+    localStorage.setItem('sk_session',JSON.stringify({code}));
     setScreen(SCREENS.LOBBY);
     return{ok:true};
   }
@@ -1046,7 +1087,7 @@ function App(){
     }
   },[JSON.stringify(game?.players),game?.phase]);
 
-  function handlePlayAgain(){setGame(null);setMyBid(null);setMyTricks(0);setScreen(SCREENS.HOME)}
+  function handlePlayAgain(){localStorage.removeItem('sk_session');setGame(null);setMyBid(null);setMyTricks(0);setScreen(SCREENS.HOME)}
   function handleFbSave(cfg){saveFbCfg(cfg);const db=initFb(cfg);if(db){setFbReady(true);setShowFbSetup(false)}}
 
   const myRndData=game?.players?.[MY_ID]?.rounds?.[game?.round]||{};
@@ -1054,6 +1095,14 @@ function App(){
   const submittedTricks=myRndData.trickSubmitted?myRndData.tricks:undefined;
   const numPlayers=Object.keys(game?.players||{}).length;
   const inGame=[SCREENS.LOBBY,SCREENS.BID,SCREENS.PLAY,SCREENS.BONUS,SCREENS.RESULT,SCREENS.BOARD,SCREENS.OVER].includes(screen);
+
+  // Warn before leaving mid-game
+  useEffect(()=>{
+    if(!inGame)return;
+    function onBeforeUnload(e){e.preventDefault();e.returnValue='';}
+    window.addEventListener('beforeunload',onBeforeUnload);
+    return()=>window.removeEventListener('beforeunload',onBeforeUnload);
+  },[inGame]);
 
   return(<>
     <Header gameCode={game?.code} inGame={inGame}

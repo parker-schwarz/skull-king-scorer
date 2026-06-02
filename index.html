@@ -337,23 +337,36 @@ const QUIPS=[
   "I've sailed these seas a thousand times.",
   "Steel yer nerves and hold yer course.",
 ];
-function oracleAdvice(hand,round,numPlayers){
+const ORDINALS=['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+function oracleAdvice(hand,round,numPlayers,playOrder){
   const{pirates=0,skullKing=0,mermaids=0,escapes=0,blackHigh=0,blackMid=0,blackLow=0,colorHigh=0,colorMid=0,colorLow=0}=hand;
+  const total=pirates+skullKing+mermaids+escapes+blackHigh+blackMid+blackLow+colorHigh+colorMid+colorLow;
+  if(total===0)return{bid:0,text:"Enter yer cards above and the Oracle shall divine yer fate…"};
 
-  // Round difficulty offset: early rounds = easier to win tricks (less competition),
-  // late rounds = harder (more powerful cards in circulation, longer gauntlets).
-  // Scale: +0.14 in round 1 tapering to -0.14 in round 10.
+  // Round difficulty: early rounds easier (fewer cards means less competition per trick).
   const rd=round<=2?0.14:round<=4?0.07:round<=6?0.0:round<=8?-0.07:-0.14;
 
-  // Player count multiplier: fewer players = easier to take a trick.
+  // Player count: fewer players = easier to take a trick.
   const pf=numPlayers<=2?1.18:numPlayers<=3?1.08:numPlayers<=5?1.0:0.88;
 
-  // Base win probability per card type + round sensitivity.
-  // Specials (Pirates/SK/Mermaids) are barely affected by round — they beat suited cards regardless.
-  // Mid-strength suited cards are most affected — far riskier in round 10 than round 1.
+  // Play order advantage: going later in the first trick gives information — you
+  // see what has already been played and can choose whether to win or deliberately lose.
+  // percentile 0 = you lead (no info), 1 = you go last (full info).
+  const order=Math.max(1,Math.min(playOrder||1,numPlayers||4));
+  const posPercentile=numPlayers>1?(order-1)/(numPlayers-1):0.5;
+  // Effect: +/-0.10 tricks at the extremes, applied before player-count scaling.
+  const posAdj=(posPercentile-0.5)*0.20;
+
+  // Win probabilities per card type.
+  // Skull King: beats all Pirates and every numbered card — only loses to Mermaids.
+  //   With 2 Mermaids in a 54-card deck the chance of being captured is low; base bumped to 0.88.
+  // Pirates: beat all suits and trump, lose only to Skull King.
+  // Mermaids: beat Skull King, lose to Pirates.
+  // Black trump beats all colored suits; color suits lose to any black.
+  // Escapes ALWAYS lose — they contribute 0 expected tricks (useful only for 0-bids).
   let exp=0;
   exp+=pirates    *Math.min(0.97,Math.max(0.82, 0.90+rd*0.10));
-  exp+=skullKing  *Math.min(0.88,Math.max(0.54, 0.72+rd*0.18));
+  exp+=skullKing  *Math.min(0.97,Math.max(0.76, 0.88+rd*0.10)); // SK wins vs everything except Mermaid
   exp+=mermaids   *Math.min(0.90,Math.max(0.58, 0.76+rd*0.14));
   exp+=blackHigh  *Math.min(0.95,Math.max(0.52, 0.85+rd*0.32));
   exp+=blackMid   *Math.min(0.78,Math.max(0.10, 0.60+rd*0.55));
@@ -361,29 +374,43 @@ function oracleAdvice(hand,round,numPlayers){
   exp+=colorHigh  *Math.min(0.68,Math.max(0.08, 0.50+rd*0.62));
   exp+=colorMid   *Math.min(0.38,Math.max(0.02, 0.22+rd*0.52));
   exp+=colorLow   *Math.min(0.14,Math.max(0.01, 0.05+rd*0.22));
-  // escapes always contribute 0
+  // escapes: 0
+
+  exp+=posAdj; // position info advantage before scaling
   exp*=pf;
 
-  const bid=Math.min(Math.round(exp),round);
-  const total=pirates+skullKing+mermaids+escapes+blackHigh+blackMid+blackLow+colorHigh+colorMid+colorLow;
-  if(total===0)return{bid:0,text:"Enter yer cards above and the Oracle shall divine yer fate…"};
+  const bid=Math.min(Math.max(0,Math.round(exp)),round);
 
-  // Round-aware flavour text
+  // Build position note
+  const posLabel=ORDINALS[order-1]||`${order}th`;
+  const posNote=posPercentile>=0.75
+    ?`Going ${posLabel} — ye see the table before ye play.`
+    :posPercentile<=0.25
+      ?`Going ${posLabel} — ye lead blind, trust yer hand.`
+      :`Going ${posLabel} — middling position.`;
+
   const q=QUIPS[Math.floor(Math.random()*QUIPS.length)];
   let txt;
-  if(round<=2){
+
+  // All-escape hand: guaranteed to lose every trick.
+  if(escapes>0&&escapes===total){
+    txt=`Pure escape hand — bid ZERO with confidence. Escapes always lose a trick. The Oracle sees no risk.`;
+  // Mostly escapes with a weak kicker.
+  }else if(escapes>0&&escapes>=total-1&&blackLow+colorLow+colorMid===total-escapes){
+    txt=`Escape-heavy hand — lean toward ZERO. Yer non-escape cards are unlikely to win. ${posNote}`;
+  }else if(round<=2){
     txt=bid===0
-      ?`Short hand — layin'low is safe. ${q}`
-      :`Only ${round} card${round>1?'s':''} dealt — make it count. ${q}`;
+      ?`Short hand — layin' low is safe. ${posNote}`
+      :`Only ${round} card${round>1?'s':''} dealt — make it count. ${posNote}`;
   }else if(bid===0){
     const reward=10*round;
-    txt=`Bid ZERO for +${reward} pts if ye stay clean — ${round>=7?'these late rounds reward the daring!':`fortune favors the bold. ${q}`}`;
+    txt=`Bid ZERO for +${reward} pts if ye stay clean. ${round>=7?'These late rounds reward the daring!':posNote}`;
   }else if(bid===round){
-    txt=`Claim ALL ${round} tricks — ${q}`;
+    txt=`Claim ALL ${round} tricks — ${posNote} ${q}`;
   }else if(round>=8&&bid<round/2){
-    txt=`Late game — yer hand be thin. Play safe at ${bid}. ${q}`;
+    txt=`Late game — yer hand be thin. Play safe at ${bid}. ${posNote}`;
   }else{
-    txt=q;
+    txt=`${posNote} ${q}`;
   }
   return{bid,text:txt};
 }
@@ -820,14 +847,16 @@ function GameOverScreen({game,myId,onPlayAgain}){
 // ── ORACLE MODAL ─────────────────────────────────────────
 function OracleModal({onClose,currentRound,numPlayers}){
   const round=currentRound||1;
+  const n=numPlayers||4;
   const[hand,setHand]=useState({pirates:0,skullKing:0,mermaids:0,escapes:0,blackHigh:0,blackMid:0,blackLow:0,colorHigh:0,colorMid:0,colorLow:0});
+  const[playOrder,setPlayOrder]=useState(1);
   const total=Object.values(hand).reduce((a,b)=>a+b,0);
   const remaining=round-total;
   function adj(key,d,max){
     if(d>0&&total>=round)return;
     setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}));
   }
-  const advice=total>0?oracleAdvice(hand,round,numPlayers||4):null;
+  const advice=total>0?oracleAdvice(hand,round,n,playOrder):null;
   const groups=[
     {title:'Special Cards',cards:[
       {key:'pirates',label:'Pirates',sub:'Beat all suits & trump',max:Math.min(5,round)},
@@ -867,6 +896,15 @@ function OracleModal({onClose,currentRound,numPlayers}){
       </div>
     </div>
     <div className="oracle-body">
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <div className="oracle-sec-title">Your Play Order — First Trick</div>
+        <div style={{fontSize:11,color:'var(--text2)',lineHeight:1.5}}>Who goes 1st, 2nd… in the opening trick? (Winner leads each subsequent trick — Oracle can only advise on the first.)</div>
+        <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+          {Array.from({length:n},(_,i)=>i+1).map(pos=>(
+            <button key={pos} onClick={()=>setPlayOrder(pos)} style={{width:44,height:44,borderRadius:'var(--radius-sm)',background:playOrder===pos?'var(--gold)':'var(--bg3)',border:`1.5px solid ${playOrder===pos?'var(--gold)':'var(--gold-border)'}`,color:playOrder===pos?'var(--ink)':'var(--text)',fontFamily:'var(--f-title)',fontSize:20,fontWeight:600,cursor:'pointer',transition:'all .14s',flexShrink:0}}>{pos}</button>
+          ))}
+        </div>
+      </div>
       {groups.map(g=>(
         <div key={g.title} style={{display:'flex',flexDirection:'column',gap:7}}>
           <div className="oracle-sec-title">{g.title}</div>

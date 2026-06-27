@@ -256,6 +256,18 @@ html,body{height:100%;background:var(--bg);overflow:hidden;-webkit-tap-highlight
 .fb-textarea{background:var(--bg3);border:1.5px solid var(--gold-border);border-radius:var(--radius-sm);color:var(--text);font-family:monospace;font-size:12px;padding:11px;width:100%;height:130px;resize:none;outline:none}
 .fb-textarea:focus{border-color:var(--gold)}
 
+/* FAQ */
+.faq-section-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);margin-top:4px}
+.faq-list{display:flex;flex-direction:column}
+.faq-item{border-top:1px solid var(--gold-border)}
+.faq-q{width:100%;background:none;border:none;color:var(--text);font-family:var(--f-ui);font-size:13px;font-weight:600;text-align:left;cursor:pointer;padding:12px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;line-height:1.45}
+.faq-chevron{color:var(--gold);font-size:11px;flex-shrink:0;margin-top:2px;transition:transform .2s}
+.faq-chevron.open{transform:rotate(180deg)}
+.faq-body{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.faq-body.expanded{max-height:600px}
+.faq-a{font-size:13px;color:var(--text2);line-height:1.65;padding-bottom:12px}
+.faq-a strong{color:var(--text)}
+
 /* MISC */
 .divider{height:1px;background:var(--gold-border);margin:3px 0}
 .spacer{flex:1}
@@ -972,6 +984,51 @@ function FbSetupModal({onClose,onSave,currentConfig}){
 }
 
 // ── HOW TO PLAY ──────────────────────────────────────────
+const FAQ_ITEMS = [
+  {q:'When do pirate powers have to be used?',
+   a:<>When winning a trick with a pirate, that power must be used <strong>immediately after the trick the pirate won</strong>. Harry the Giant's power is the only one that can be used after the last trick of a round, as the other pirates' powers are of no benefit after the last trick.</>},
+  {q:'What happens during Rascal scoring when a player wagers and is off by one?',
+   a:<>You <strong>lose the points wagered</strong>. You must still be exactly right to earn a bonus from a wager with the Rascal. This remains the same when using Cannonball.</>},
+  {q:'What happens when the Kraken and White Whale are played in the same trick?',
+   a:<>Whichever was played <strong>second retains its power</strong>; the first acts as an escape. If the Kraken is played after the White Whale, the player who would have won had neither creature been played leads out the next trick.</>},
+  {q:'Can players get Loot card points with an off-by-one bid under Rascal scoring?',
+   a:<>No. Both players must still get their bids <strong>exactly correct</strong> to receive any Loot bonus points.</>},
+  {q:'When Graybeard plays the Tigress, does it play as an escape or pirate?',
+   a:<>It plays as an <strong>escape</strong>.</>},
+  {q:'A Mermaid, Skull King, and pirate are all played in the same trick. Who wins?',
+   a:<>The <strong>Mermaid wins the trick</strong>.</>},
+  {q:'If the Tigress is played as an escape, are bonus points awarded for its capture?',
+   a:<><strong>No</strong> — bonus points are not awarded when the Tigress is played as an escape.</>},
+  {q:'What suit leads when a Kraken or White Whale are played first in a trick?',
+   a:<><strong>There is no assigned suit.</strong></>},
+  {q:'When a loot card leads the trick, what suit is played?',
+   a:<>The <strong>next player to play chooses the suit</strong>. It plays like an escape card.</>},
+  {q:'If the White Whale is played mid-trick, must remaining players follow suit?',
+   a:<><strong>Yes.</strong> Remaining players play the established suit if they have it, or a special card if they choose.</>},
+  {q:'When the Kraken is played, who leads off the next trick?',
+   a:<>The person who <strong>would have won the trick had the Kraken not been played</strong> leads off the next trick. (Note: there was a discrepancy between the rulebook and player aids in one print run — this is the official ruling.)</>},
+];
+
+function FaqAccordion(){
+  const [open,setOpen]=React.useState(null);
+  function toggle(i){setOpen(open===i?null:i)}
+  return(
+    <div className="faq-list">
+      {FAQ_ITEMS.map((item,i)=>(
+        <div className="faq-item" key={i}>
+          <button className="faq-q" onClick={()=>toggle(i)}>
+            <span style={{flex:1}}>{item.q}</span>
+            <span className={`faq-chevron${open===i?' open':''}`}>▼</span>
+          </button>
+          <div className={`faq-body${open===i?' expanded':''}`}>
+            <div className="faq-a">{item.a}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HowToPlayModal({onClose}){
   return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
     <div className="modal-sheet">
@@ -994,6 +1051,9 @@ function HowToPlayModal({onClose}){
         <p><strong>Card Rank:</strong> Escape &lt; Colored Suits &lt; Black Trump &lt; Pirates &lt; Skull King &lt; Mermaids</p>
         <p style={{fontSize:12,color:'var(--text2)'}}>Mermaids beat Skull King but lose to Pirates. First card played wins ties.</p>
       </div>
+      <div className="divider"/>
+      <div className="faq-section-title">Frequently Asked Questions</div>
+      <FaqAccordion/>
       <button className="btn btn-gold" onClick={onClose}>Got it, matey! ⚓</button>
     </div>
   </div>);

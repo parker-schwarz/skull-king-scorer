@@ -131,6 +131,19 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .lobby-tag{font-size:9.5px;font-weight:900;letter-spacing:.12em;color:var(--red);border:1.5px solid var(--red);border-radius:5px;padding:2px 6px}
 .lobby-tag.host{color:var(--gold);border-color:var(--gold)}
 
+/* ── POST-GAME MARKETING ── */
+.mkt-card{background:var(--paper);border:1.5px solid var(--gold);border-radius:var(--radius);padding:13px 14px}
+.mkt-title{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.mkt-sub{font-size:12.5px;font-weight:600;color:var(--ink2);line-height:1.5;margin-top:4px}
+.email-row{display:flex;gap:8px;margin-top:10px}
+.email-row .inp{flex:1;font-size:14px;padding:10px 12px}
+.email-row .btn{flex-shrink:0}
+.promo-games{display:flex;gap:8px;margin-top:10px}
+.promo-g{flex:1;text-align:center;background:#fff;border:2px solid var(--line);border-radius:10px;padding:10px 6px;text-decoration:none;color:var(--ink)}
+.promo-em{font-size:26px;line-height:1.2}
+.promo-nm{font-size:10.5px;font-weight:800;margin-top:4px;line-height:1.25}
+.vid-link{font-size:13px;font-weight:800;color:var(--red);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+
 /* ── PAD ── */
 .pad{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .round-bar{display:flex;gap:6px;padding:11px 16px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
@@ -404,6 +417,8 @@ function Setup({gameId,onBack,onStart}){
   return(<div className={`scr setup ${g.theme}`}>
     <button className="back-btn" onClick={onBack}>← All games</button>
     <div className="setup-title">{g.emoji} {g.title}</div>
+    {gameId==='aq'&&<a className="vid-link" href="https://www.gbecks.com/aq-vid" target="_blank" rel="noopener">▶ New to the game? Watch Grandpa's how-to-play video</a>}
+    {gameId==='amt'&&<a className="vid-link" href="https://www.gbecks.com/amt-vid" target="_blank" rel="noopener">▶ New to the game? Watch Grandpa's how-to-play video</a>}
     <div className="inp-wrap">
       <div className="inp-label">Your name</div>
       <input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Grandpa…" maxLength={16} autoFocus/>
@@ -721,6 +736,25 @@ function WinnerModal({room,onClose,onNewGame}){
   totals.sort((a,b)=>g==='amt'?(a.t-b.t)||(b.patt-a.patt):b.t-a.t);
   const w=totals[0];
   const gm=gameById(g);
+  const others=GAMES.filter(x=>x.id!==g);
+  const[email,setEmail]=useState('');
+  const[sent,setSent]=useState(false);
+  function signup(){
+    if(!/^\S+@\S+\.\S+$/.test(email))return;
+    // DEMO STUB: leads are kept on-device. In production this POSTs to
+    // Grandpa Beck's email platform (Klaviyo / Mailchimp / Shopify list).
+    try{
+      const l=JSON.parse(localStorage.getItem('gb_leads')||'[]');
+      l.push({email,game:g,at:Date.now()});
+      localStorage.setItem('gb_leads',JSON.stringify(l));
+    }catch{}
+    setSent(true);
+  }
+  function share(){
+    const txt=`${w.p.name} just won ${gm.title} on Grandpa Beck's Scorepad! 🎉`;
+    if(navigator.share)navigator.share({text:txt,url:'https://www.grandpabecksgames.com/'}).catch(()=>{});
+    else if(navigator.clipboard)navigator.clipboard.writeText(txt+' · grandpabecksgames.com').catch(()=>{});
+  }
   return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
     <div className="modal-sheet">
       <div className="win-banner">
@@ -729,6 +763,29 @@ function WinnerModal({room,onClose,onNewGame}){
         <div className="win-sub">{g==='amt'?`${w.t} points (lowest) · ${w.patt} patterns`:`${w.t} points`}</div>
       </div>
       {totals.slice(1).map(({p,t})=><div key={p.pid} className="strow"><div className="strow-lbl">{p.name}</div><div className="stval">{t}</div></div>)}
+      <button className="btn btn-outline" onClick={share}>📣 Share the Bragging Rights</button>
+      <div className="mkt-card">
+        <div className="mkt-title">Stay at Grandpa's Table</div>
+        <div className="mkt-sub">New games, free printables & family game night ideas — straight from Grandpa Beck. No spam, just fun.</div>
+        {sent
+          ?<div className="okline" style={{fontSize:13,paddingTop:8}}>✓ You're on the list — welcome to the family!</div>
+          :<div className="email-row">
+            <input className="inp" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="grandma@example.com"/>
+            <button className="btn btn-main btn-sm" onClick={signup} disabled={!/^\S+@\S+\.\S+$/.test(email)}>Join</button>
+          </div>}
+      </div>
+      <div className="mkt-card">
+        <div className="mkt-title">Meet the Rest of the Family</div>
+        <div className="promo-games">
+          {others.map(o=>(
+            <a key={o.id} className="promo-g" href="https://www.grandpabecksgames.com/" target="_blank" rel="noopener">
+              <div className="promo-em">{o.emoji}</div>
+              <div className="promo-nm">{o.title}</div>
+            </a>
+          ))}
+        </div>
+        <a className="btn btn-outline btn-sm" style={{marginTop:9,textDecoration:'none',display:'flex'}} href="https://www.grandpabecksgames.com/" target="_blank" rel="noopener">Shop Grandpa Beck's Games</a>
+      </div>
       <button className="btn btn-main" onClick={onNewGame}>{gm.emoji} New Game</button>
       <button className="btn btn-ghost" onClick={onClose}>Back to Scores</button>
     </div>

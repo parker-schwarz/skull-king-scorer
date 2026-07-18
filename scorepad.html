@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#F5F1E6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GB Scorepad">
+<title>Grandpa Beck's Scorepad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Grandpa Beck's Games brand palette */
+  --paper:#F5F1E6;      /* warm cream section background */
+  --paper2:#FFFFFF;     /* white breathing room */
+  --paper3:#ECE5D3;     /* deeper cream */
+  --teal:#0D2B33;--teal2:#123C47;   /* dark teal anchor */
+  --ink:#1D1D1F;--ink2:#5E5A4E;--ink3:#A79F8C;
+  --line:rgba(13,43,51,.14);--line2:rgba(13,43,51,.30);
+  --red:#C92C2C;--red2:#A82222;     /* brick red CTA */
+  --gold:#C9930A;                    /* mustard gold accents */
+  --accent:#C92C2C;--accent2:#0D2B33;--accent-soft:rgba(201,44,44,.08);
+  --green:#3F7A44;
+  --radius:10px;--radius-sm:6px;
+  --f-title:'Figtree',system-ui,sans-serif;
+  --f-ui:'Figtree',system-ui,sans-serif;
+}
+/* per-game hub card themes (box-art flavored) */
+.th-sk{}.th-aq{}.th-amt{}
+.th-sk .gcard-title{background:linear-gradient(180deg,#F5D06F 20%,#C9930A 85%);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;letter-spacing:.03em;text-transform:uppercase;text-shadow:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.55))}
+.th-aq .gcard-title{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:.05em}
+.th-aq .gcard-tag{letter-spacing:.09em;text-transform:uppercase;font-size:11.5px}
+.th-amt .gcard-title{font-weight:900;color:#fff;letter-spacing:.01em;text-shadow:-2px 2px 0 #E14FA0,2px -2px 0 #7C3AAD,0 4px 12px rgba(0,0,0,.35)}
+html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highlight-color:transparent}
+#root{height:100%;display:flex;flex-direction:column;max-width:520px;margin:0 auto;font-family:var(--f-ui);color:var(--ink);position:relative;overflow:hidden;background:var(--paper)}
+
+.hdr{display:flex;align-items:center;gap:10px;padding:13px 16px 10px;border-bottom:1px solid var(--gold);flex-shrink:0;background:#fff}
+.hdr-title{font-family:var(--f-title);font-weight:800;font-size:17px;color:var(--teal);letter-spacing:-.01em;flex:1;line-height:1.15}
+.hdr-title small{display:block;font-family:var(--f-ui);font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+.hdr-code{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--accent);background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:7px;padding:4px 8px}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:19px;padding:4px 6px;border-radius:8px;color:var(--ink2)}
+.icon-btn:active{background:var(--paper3)}
+
+.scr{flex:1;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 22px;border-radius:4px;font-family:var(--f-ui);font-size:14.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;transition:transform .15s,opacity .15s;width:100%}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-main{background:var(--red);color:#fff}
+.btn-main:active{background:var(--red2)}
+.btn-outline{background:#fff;color:var(--red);border:2px solid var(--red)}
+.btn-ghost{background:var(--paper3);color:var(--teal)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:9px 16px;font-size:14px;width:auto;border-radius:10px}
+
+.inp-wrap{display:flex;flex-direction:column;gap:6px}
+.inp-label{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.inp{background:var(--paper2);border:2px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-family:var(--f-ui);font-size:17px;font-weight:700;padding:12px 14px;outline:none;width:100%}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--ink3);font-weight:600}
+.inp-code{text-transform:uppercase;letter-spacing:.2em;text-align:center;font-size:22px}
+
+/* ── HUB CAROUSEL ── */
+.hub{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.ann{background:var(--red);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;text-align:center;padding:6px 10px;flex-shrink:0}
+.hub-top{text-align:center;padding:16px 20px 4px}
+.hub-brand{font-family:var(--f-title);font-weight:900;font-size:25px;letter-spacing:-.02em;color:var(--teal)}
+.hub-brand em{font-style:normal;color:var(--red)}
+.hub-sub{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-top:3px}
+.gold-hr{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:11px 34px 0;flex-shrink:0}
+.car-wrap{flex:1;overflow:hidden;position:relative}
+.car-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.22,.9,.3,1)}
+.car-slide{width:100%;flex-shrink:0;padding:14px 22px 8px;display:flex}
+.gcard{flex:1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(58,44,28,.25);border:3px solid rgba(255,255,255,.25)}
+.gcard-em{font-size:74px;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.gcard-title{font-family:var(--f-title);font-weight:700;font-size:34px;letter-spacing:-.02em;text-align:center;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+.gcard-tag{font-size:13.5px;font-weight:700;opacity:.92;text-align:center;max-width:270px;line-height:1.45}
+.gcard-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;justify-content:center}
+.chip{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:4px 11px}
+.gcard-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:280px;margin-top:14px}
+.gcard .btn-main{background:#fff;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.gcard .btn-outline{color:#fff;border-color:rgba(255,255,255,.55)}
+.car-dots{display:flex;justify-content:center;gap:8px;padding:12px 0 6px}
+.car-dot{width:9px;height:9px;border-radius:50%;background:var(--line2);transition:all .25s;border:none;padding:0;cursor:pointer}
+.car-dot.on{background:var(--red);width:26px;border-radius:5px}
+.car-arrows{display:flex;justify-content:space-between;padding:0 26px 4px}
+.car-arrow{background:var(--paper2);border:2px solid var(--line);border-radius:50%;width:38px;height:38px;font-size:17px;color:var(--ink2);cursor:pointer}
+.hub-foot{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink2);padding:6px 20px 16px}
+.hub-foot .lnk{color:var(--accent);cursor:pointer;text-decoration:underline}
+.fb-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:1px}
+.fb-dot.off{background:var(--ink3)}
+
+/* ── SETUP ── */
+.setup{padding:20px;display:flex;flex-direction:column;gap:15px}
+.back-btn{background:none;border:none;color:var(--ink2);font-family:var(--f-ui);font-weight:800;font-size:14px;cursor:pointer;align-self:flex-start;padding:5px 0}
+.setup-title{font-family:var(--f-title);font-weight:700;font-size:27px}
+.pl-row{display:flex;gap:8px;align-items:center}
+.pl-row .inp{flex:1}
+.pl-x{background:var(--paper3);border:none;width:38px;height:38px;border-radius:10px;font-size:16px;color:var(--ink2);cursor:pointer;flex-shrink:0}
+.add-pl{background:none;border:2px dashed var(--line2);border-radius:var(--radius-sm);color:var(--ink2);font-family:var(--f-ui);font-weight:800;font-size:14px;padding:11px;cursor:pointer}
+.tog-row{display:flex;align-items:center;justify-content:space-between;background:var(--paper2);border:2px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;gap:12px}
+.tog-lbl{font-size:15px;font-weight:800}
+.tog-sub{font-size:12px;color:var(--ink2);font-weight:600;margin-top:2px}
+.tog{position:relative;width:46px;height:27px;background:var(--paper3);border-radius:14px;border:2px solid var(--line);cursor:pointer;transition:background .18s;flex-shrink:0}
+.tog.on{background:var(--accent);border-color:var(--accent)}
+.tog::after{content:'';position:absolute;top:2.5px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tog.on::after{transform:translateX(18px)}
+.seg{display:flex;background:var(--paper3);border-radius:12px;padding:4px;gap:4px}
+.seg-btn{flex:1;border:none;background:none;border-radius:9px;padding:9px 6px;font-family:var(--f-ui);font-weight:800;font-size:13.5px;color:var(--ink2);cursor:pointer}
+.seg-btn.on{background:var(--paper2);color:var(--accent);box-shadow:0 1px 5px rgba(58,44,28,.15)}
+.info-note{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--accent-soft);border-radius:var(--radius-sm);padding:11px 13px;line-height:1.5}
+
+/* ── PAD ── */
+.pad{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.round-bar{display:flex;gap:6px;padding:11px 16px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+.round-pill{flex-shrink:0;border:2px solid var(--line);background:var(--paper2);border-radius:999px;padding:6px 13px;font-family:var(--f-ui);font-weight:800;font-size:13px;color:var(--ink2);cursor:pointer}
+.round-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.round-pill.done{border-color:var(--accent);color:var(--accent)}
+.tier-lbl{align-self:center;font-size:10px;font-weight:900;letter-spacing:.1em;color:var(--ink3);text-transform:uppercase;padding:0 3px;flex-shrink:0}
+.pad-body{flex:1;overflow-y:auto;padding:4px 16px 90px;-webkit-overflow-scrolling:touch}
+.pcard{background:var(--paper2);border:2px solid var(--line);border-radius:var(--radius);padding:13px 14px;margin-bottom:12px}
+.pcard-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.pcard-name{font-family:var(--f-title);font-weight:700;font-size:18px;flex:1}
+.pcard-pts{font-family:var(--f-title);font-weight:700;font-size:20px;color:var(--accent)}
+.pcard-pts small{font-size:11px;font-family:var(--f-ui);font-weight:800;color:var(--ink2);display:block;text-align:right;letter-spacing:.08em}
+.strow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1.5px dashed var(--line)}
+.strow-lbl{font-size:13.5px;font-weight:700;flex:1;line-height:1.25}
+.strow-lbl small{display:block;font-size:11px;color:var(--ink2);font-weight:600}
+.stctr{display:flex;align-items:center;gap:9px}
+.stbtn{width:32px;height:32px;border-radius:9px;background:var(--paper3);border:1.5px solid var(--line);color:var(--accent);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:800;padding:0}
+.stbtn:disabled{opacity:.25}
+.stval{font-size:17px;font-weight:900;min-width:24px;text-align:center}
+.stval.neg{color:var(--red)}
+.patt-grid{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.patt{display:flex;align-items:center;gap:9px;border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:8px 11px;font-size:13px;font-weight:800;cursor:pointer;color:var(--ink);font-family:var(--f-ui);text-align:left}
+.patt.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.patt.used{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+.patt .pmark{margin-left:auto;font-size:15px}
+.warn{font-size:12px;font-weight:700;color:var(--red);padding:4px 2px}
+.okline{font-size:12px;font-weight:700;color:var(--green);padding:4px 2px}
+.pad-foot{position:absolute;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--paper) 30%);display:flex;gap:9px}
+.tabbar{display:flex;border-top:2px solid var(--line);background:var(--paper2);flex-shrink:0}
+.tab{flex:1;border:none;background:none;padding:10px 4px calc(9px + env(safe-area-inset-bottom));font-family:var(--f-ui);font-weight:800;font-size:12px;color:var(--ink2);cursor:pointer}
+.tab.on{color:var(--accent)}
+.tab .tico{display:block;font-size:19px;margin-bottom:1px}
+
+/* board */
+.board{padding:16px}
+.bd-table{width:100%;border-collapse:collapse;background:var(--paper2);border-radius:var(--radius);overflow:hidden;border:2px solid var(--line)}
+.bd-table th{font-size:10.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:9px 6px;border-bottom:2px solid var(--line);text-align:center}
+.bd-table th:first-child{text-align:left;padding-left:12px}
+.bd-table td{font-size:13.5px;font-weight:700;padding:8px 6px;text-align:center;border-bottom:1.5px dashed var(--line)}
+.bd-table td:first-child{text-align:left;padding-left:12px;font-weight:800}
+.bd-table tr:last-child td{border-bottom:none}
+.bd-total{color:var(--accent);font-weight:900}
+.bd-lead td{background:var(--accent-soft)}
+.neg{color:var(--red)}
+
+/* modal */
+.modal-overlay{position:absolute;inset:0;background:rgba(58,44,28,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60}
+.modal-sheet{background:var(--paper2);border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));width:100%;max-height:82%;overflow-y:auto;display:flex;flex-direction:column;gap:13px}
+.modal-title{font-family:var(--f-title);font-weight:700;font-size:21px}
+.modal-body{font-size:14px;font-weight:600;color:var(--ink2);line-height:1.55}
+.win-banner{text-align:center;padding:10px 0}
+.win-em{font-size:60px}
+.win-name{font-family:var(--f-title);font-weight:700;font-size:30px;color:var(--accent)}
+.win-sub{font-size:13px;font-weight:700;color:var(--ink2);margin-top:3px}
+.fb-textarea{background:var(--paper);border:2px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-family:monospace;font-size:12px;padding:11px;min-height:130px;outline:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+window.onerror=function(msg,src,line,col,err){
+  var d=document.getElementById('root');
+  if(d)d.innerHTML='<div style="background:#2a1005;color:#ffb199;padding:20px;font-family:monospace;font-size:13px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:9999"><b>JS ERROR (line '+line+')::</b>\n'+msg+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
+  return false;
+};
+</script>
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+
+// ─────────────────────────────────────────────────────────
+// Grandpa Beck's Scorepad — Skull King · Antiquity Quest · Another Man's Treasure
+// Data lives under games/$code (same Firebase path shape as the Skull King
+// scorer's security rules require: code, hostId, round, phase, players).
+// ─────────────────────────────────────────────────────────
+
+const GAMES=[
+  {id:'sk',theme:'th-sk',emoji:'☠️',title:'Skull King',tag:'Bid yer tricks, keep yer word, plunder the bonuses.',
+   meta:['2–8 players','10 rounds','Highest wins'],
+   grad:'radial-gradient(ellipse at 50% 88%,rgba(240,170,60,.45),transparent 55%),linear-gradient(170deg,#232B5C 0%,#14204A 45%,#0B1230 100%)'},
+  {id:'aq',theme:'th-aq',emoji:'🏺',title:'Antiquity Quest',tag:'Collect · Combine · Complete',
+   meta:['2–8 players','1–3 rounds','Highest wins'],
+   grad:'radial-gradient(ellipse at 50% 20%,rgba(255,196,110,.35),transparent 60%),linear-gradient(170deg,#4A3115 0%,#6B4A1E 55%,#2E1E0C 100%)'},
+  {id:'amt',theme:'th-amt',emoji:'🦌',title:"Another Man's Treasure",tag:'Pack Paul & Mona’s treasures — take home as few as you can!',
+   meta:['2–6 players','5 or 9 rounds','Lowest wins'],
+   grad:'repeating-linear-gradient(45deg,rgba(0,0,0,.10) 0 12px,transparent 12px 24px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 12px,transparent 12px 24px),linear-gradient(170deg,#C1571D,#8F3E14 70%,#6E2F10)'},
+];
+const gameById=id=>GAMES.find(g=>g.id===id)||GAMES[0];
+
+// ── Firebase (shared project with the Skull King scorer) ──
+const FB_KEY='gb_firebase_config';let _db=null;
+const BUILT_IN={apiKey:"AIzaSyD38efOwDaQn9lGX_BMBEcuZDoZSeuCUz4",authDomain:"skull-king-score-tracker.firebaseapp.com",databaseURL:"https://skull-king-score-tracker-default-rtdb.firebaseio.com",projectId:"skull-king-score-tracker",storageBucket:"skull-king-score-tracker.firebasestorage.app",messagingSenderId:"269754888534",appId:"1:269754888534:web:2fcdee6d6043c0d3dfe6f7"};
+function loadFbCfg(){try{return JSON.parse(localStorage.getItem(FB_KEY))}catch{return null}}
+function initFb(cfg){try{if(!firebase.apps.length)firebase.initializeApp(cfg);_db=firebase.database();return _db}catch(e){console.error(e);return null}}
+async function fbSet(p,v){if(_db)await _db.ref(p).set(v)}
+function fbOn(p,cb){if(!_db)return()=>{};const r=_db.ref(p);r.on('value',s=>cb(s.val()));return()=>r.off('value')}
+async function fbGet(p){if(!_db)return null;return(await _db.ref(p).once('value')).val()}
+async function fbRemove(p){if(_db)await _db.ref(p).remove()}
+
+function getMyId(){let id=localStorage.getItem('gb_uid');if(!id){id=Math.random().toString(36).slice(2,11);localStorage.setItem('gb_uid',id)}return id}
+function mkCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('')}
+const range=n=>Array.from({length:n},(_,i)=>i);
+function playerList(room){return Object.entries(room.players||{}).map(([pid,p])=>({pid,...p})).sort((a,b)=>(a.ord||0)-(b.ord||0))}
+function cell(room,gk,r,pid){return(((room[gk]||{})['r'+r]||{})[pid])||{}}
+
+// ── SKULL KING scoring ──
+function skBidPts(bid,tricks,round){
+  if(bid===0)return tricks===0?10*round:-10*round;
+  return tricks===bid?20*tricks:-10*Math.abs(tricks-bid);
+}
+const skBidOK=(bid,tricks)=>(bid===0&&tricks===0)||(bid>0&&tricks===bid);
+const SK_BONUSES=[
+  {key:'std14',label:'14 of Yellow / Purple / Green',pts:10,max:3},
+  {key:'blk14',label:'14 of Black (Jolly Roger)',pts:20,max:1},
+  {key:'mermPirate',label:'Mermaid captures a Pirate',pts:20,max:2},
+  {key:'pirateSK',label:'Pirate captured by Skull King',pts:30,max:5},
+  {key:'skMerm',label:'Mermaid captures Skull King',pts:40,max:1},
+  {key:'lootAlly',label:'Loot alliance honored',pts:20,max:2},
+];
+function skBonusTotal(b){if(!b)return 0;return SK_BONUSES.reduce((s,row)=>s+(b[row.key]||0)*row.pts,0)}
+function skRoundPts(c,round){
+  if(c.bid==null||c.tricks==null)return null;
+  return skBidPts(c.bid,c.tricks,round)+(skBidOK(c.bid,c.tricks)?skBonusTotal(c.bonus):0);
+}
+function skTotal(room,pid,upTo){let t=0;for(let r=1;r<=(upTo||10);r++){const p=skRoundPts(cell(room,'sk',r,pid),r);if(p!=null)t+=p}return t}
+
+// ── ANTIQUITY QUEST scoring ──
+const AQ_COLLECTIONS=[
+  {key:'mixed',label:'Mixed Collection',pts:250,sub:'Antiquities + Treasures, 5+ cards'},
+  {key:'stdAnt',label:'Standard Antiquity',pts:500,sub:'5 Antiquities, one civilization'},
+  {key:'stdTre',label:'Standard Treasure',pts:750,sub:'Any 5 Treasures'},
+  {key:'perfAnt',label:'Perfect Antiquity',pts:1000,sub:'1-2-3-4-5 of one civilization'},
+  {key:'perfTre',label:'Perfect Treasure',pts:1500,sub:'All 5 unique Treasures'},
+];
+function aqHasEachType(c){
+  return (c.mixed||0)>0 && ((c.stdAnt||0)+(c.stdTre||0))>0 && ((c.perfAnt||0)+(c.perfTre||0))>0;
+}
+// The 500-pt "went out first" bonus is computed from state, never stored:
+// first-out earns it with one Mixed + one Standard + one Perfect; if they
+// missed the set, every OTHER player with one of each earns it instead.
+function aqBonus500(room,r,pid){
+  const rd=(room.aq||{})['r'+r]||{};
+  const foPid=Object.keys(rd).find(k=>rd[k]&&rd[k].firstOut);
+  if(!foPid)return 0;
+  const mine=rd[pid]||{};
+  if(pid===foPid)return aqHasEachType(mine)?500:0;
+  return !aqHasEachType(rd[foPid]||{})&&aqHasEachType(mine)?500:0;
+}
+function aqRoundPts(c,bonus500){
+  if(!c||!c.touched)return null;
+  let t=bonus500||0;
+  AQ_COLLECTIONS.forEach(k=>t+=(c[k.key]||0)*k.pts);
+  t+=(c.playedAnt||0)*25+(c.playedTre||0)*50;
+  t-=(c.handAnt||0)*25+(c.handTre||0)*50+(c.handChar||0)*100;
+  t+=(c.civBonus||0)*250;
+  return t;
+}
+function aqTotal(room,pid){let t=0;const n=room.options?.aqRounds||1;for(let r=1;r<=n;r++){const p=aqRoundPts(cell(room,'aq',r,pid),aqBonus500(room,r,pid));if(p!=null)t+=p}return t}
+
+// ── ANOTHER MAN'S TREASURE scoring ──
+const AMT_CLASSIC_PATTERNS=[
+  {key:'2s4',label:'2 Sets of 4'},
+  {key:'2r4',label:'2 Suited Runs of 4'},
+  {key:'r4s4',label:'1 Suited Run of 4 + 1 Set of 4'},
+  {key:'r8',label:'1 Suited Run of 8'},
+  {key:'4p',label:'4 Suited Pairs'},
+];
+const AMT_PROG_TIERS=[
+  {name:'6-Card Rounds',rounds:[1,2,3],patterns:[{key:'t1r6',label:'1 Suited Run of 6'},{key:'t1s3',label:'2 Sets of 3'},{key:'t1p3',label:'3 Suited Pairs'}]},
+  {name:'8-Card Rounds',rounds:[4,5,6],patterns:[{key:'t2r8',label:'1 Suited Run of 8'},{key:'t2s4',label:'2 Sets of 4'},{key:'t2p4',label:'4 Suited Pairs'}]},
+  {name:'10-Card Rounds',rounds:[7,8,9],patterns:[{key:'t3r5',label:'2 Suited Runs of 5'},{key:'t3s5',label:'2 Sets of 5'},{key:'t3p5',label:'5 Suited Pairs'}]},
+];
+const amtTier=r=>AMT_PROG_TIERS[Math.floor((r-1)/3)];
+function amtRoundPts(c,prog){
+  if(!c||!c.touched)return null;
+  let t=(c.treas||0)*5+(c.w10||0)*10+(c.w15||0)*15;
+  if(prog)t+=(c.smileHand||0)*10-(c.smilePlay||0)*10;
+  return t;
+}
+function amtTotal(room,pid){const n=room.options?.amtMode==='prog'?9:5;const prog=room.options?.amtMode==='prog';let t=0;for(let r=1;r<=n;r++){const p=amtRoundPts(cell(room,'amt',r,pid),prog);if(p!=null)t+=p}return t}
+function amtUsedPatterns(room,pid,exceptRound){
+  const n=room.options?.amtMode==='prog'?9:5;const used={};
+  for(let r=1;r<=n;r++){if(r===exceptRound)continue;const c=cell(room,'amt',r,pid);if(c.pattern)used[c.pattern]=r}
+  return used;
+}
+function amtPatternCount(room,pid){const n=room.options?.amtMode==='prog'?9:5;let c=0;for(let r=1;r<=n;r++){if(cell(room,'amt',r,pid).pattern)c++}return c}
+
+// ── Shared bits ──
+function Toggle({on,onToggle}){return<div className={`tog ${on?'on':''}`} onClick={onToggle}/>}
+function Stepper({val,set,min=0,max=99,neg}){
+  return(<div className="stctr">
+    <button className="stbtn" onClick={()=>set(Math.max(min,(val||0)-1))} disabled={(val||0)<=min}>−</button>
+    <div className={`stval${neg&&(val||0)>0?' neg':''}`}>{val||0}</div>
+    <button className="stbtn" onClick={()=>set(Math.min(max,(val||0)+1))} disabled={(val||0)>=max}>+</button>
+  </div>);
+}
+function StRow({label,sub,children}){
+  return(<div className="strow">
+    <div className="strow-lbl">{label}{sub&&<small>{sub}</small>}</div>
+    {children}
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// HUB
+// ─────────────────────────────────────────────────────────
+function Hub({onCreate,onJoin,fbReady}){
+  const[idx,setIdx]=useState(0);
+  const[drag,setDrag]=useState(0);
+  const touch=useRef(null);
+  const go=i=>setIdx(Math.max(0,Math.min(GAMES.length-1,i)));
+  function ts(e){touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY,active:true}}
+  function tm(e){
+    if(!touch.current?.active)return;
+    const dx=e.touches[0].clientX-touch.current.x,dy=e.touches[0].clientY-touch.current.y;
+    if(Math.abs(dy)>Math.abs(dx)*1.4)return;
+    setDrag(dx);
+  }
+  function te(){
+    if(!touch.current?.active)return;
+    if(drag<-55)go(idx+1);else if(drag>55)go(idx-1);
+    setDrag(0);touch.current=null;
+  }
+  const g=GAMES[idx];
+  return(<div className={`hub ${g.theme}`}>
+    <div className="ann">Grandpa Beck's Games · Official Scorepad</div>
+    <div className="hub-top">
+      <div className="hub-brand">Grandpa Beck's <em>Scorepad</em></div>
+      <div className="hub-sub">Family Game Night · Zero Pencils</div>
+    </div>
+    <div className="gold-hr"/>
+    <div className="car-wrap" onTouchStart={ts} onTouchMove={tm} onTouchEnd={te}>
+      <div className="car-track" style={{transform:`translateX(calc(${-idx*100}% + ${drag}px))`,transition:drag?'none':undefined}}>
+        {GAMES.map(gm=>(
+          <div key={gm.id} className={`car-slide ${gm.theme}`}>
+            <div className="gcard" style={{background:gm.grad}}>
+              <div className="gcard-em">{gm.emoji}</div>
+              <div className="gcard-title">{gm.title}</div>
+              <div className="gcard-tag">{gm.tag}</div>
+              <div className="gcard-meta">{gm.meta.map(m=><span key={m} className="chip">{m}</span>)}</div>
+              <div className="gcard-btns">
+                <button className="btn btn-main" onClick={()=>onCreate(gm.id)}>Start Scoring</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="car-dots">{GAMES.map((gm,i)=><button key={gm.id} className={`car-dot${i===idx?' on':''}`} onClick={()=>go(i)}/>)}</div>
+    <div className="car-arrows">
+      <button className="car-arrow" onClick={()=>go(idx-1)} style={{visibility:idx>0?'visible':'hidden'}}>←</button>
+      <button className="car-arrow" onClick={()=>go(idx+1)} style={{visibility:idx<GAMES.length-1?'visible':'hidden'}}>→</button>
+    </div>
+    <div className="hub-foot">
+      <span className="fb-dot"/><span className="lnk" onClick={onJoin}>Join a table with a code</span>
+      {' · '}<span><span className={`fb-dot${fbReady?'':' off'}`}/>{fbReady?'live sync on':'local only'}</span>
+    </div>
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// SETUP
+// ─────────────────────────────────────────────────────────
+function Setup({gameId,onBack,onStart}){
+  const g=gameById(gameId);
+  const maxP=gameId==='amt'?6:8;
+  const[names,setNames]=useState(['','']);
+  const[aqRounds,setAqRounds]=useState(3);
+  const[aqAdv,setAqAdv]=useState(false);
+  const[amtMode,setAmtMode]=useState('classic');
+  const good=names.filter(n=>n.trim()).length>=2;
+  function setName(i,v){setNames(ns=>ns.map((n,j)=>j===i?v:n))}
+  return(<div className={`scr setup ${g.theme}`}>
+    <button className="back-btn" onClick={onBack}>← All games</button>
+    <div className="setup-title">{g.emoji} {g.title}</div>
+    <div className="inp-label">Players (in seating order)</div>
+    {names.map((n,i)=>(
+      <div key={i} className="pl-row">
+        <input className="inp" value={n} onChange={e=>setName(i,e.target.value)} placeholder={`Player ${i+1}`} maxLength={16}/>
+        {names.length>2&&<button className="pl-x" onClick={()=>setNames(ns=>ns.filter((_,j)=>j!==i))}>✕</button>}
+      </div>
+    ))}
+    {names.length<maxP&&<button className="add-pl" onClick={()=>setNames(ns=>[...ns,''])}>+ Add player</button>}
+
+    {gameId==='aq'&&<React.Fragment>
+      <div className="inp-label">Rounds</div>
+      <div className="seg">
+        {[1,3].map(n=><button key={n} className={`seg-btn${aqRounds===n?' on':''}`} onClick={()=>setAqRounds(n)}>{n===1?'Single Round':'Full Game (3)'}</button>)}
+      </div>
+      <div className="tog-row">
+        <div><div className="tog-lbl">Advanced rules</div><div className="tog-sub">Adds the On Assignment civilization bonus</div></div>
+        <Toggle on={aqAdv} onToggle={()=>setAqAdv(a=>!a)}/>
+      </div>
+    </React.Fragment>}
+
+    {gameId==='amt'&&<React.Fragment>
+      <div className="inp-label">Game mode</div>
+      <div className="seg">
+        <button className={`seg-btn${amtMode==='classic'?' on':''}`} onClick={()=>setAmtMode('classic')}>Classic · 5 rounds</button>
+        <button className={`seg-btn${amtMode==='prog'?' on':''}`} onClick={()=>setAmtMode('prog')}>Progressive · 9 rounds</button>
+      </div>
+      {amtMode==='prog'&&<div className="info-note">Progressive: three 6-card rounds, three 8-card rounds, three 10-card rounds — each tier has its own patterns, plus ☺ smiley bonuses (−10 played / +10 stuck in hand).</div>}
+    </React.Fragment>}
+
+    <div className="info-note">A 6-letter table code is created so everyone can open this scorepad live on their own phone.</div>
+    <button className="btn btn-main" disabled={!good} onClick={()=>{
+      const opts=gameId==='aq'?{aqRounds,aqAdv}:gameId==='amt'?{amtMode}:{};
+      onStart(gameId,names.map(n=>n.trim()).filter(Boolean),opts);
+    }}>{g.emoji} Deal Me In</button>
+  </div>);
+}
+
+function Join({onBack,onJoin}){
+  const[code,setCode]=useState('');
+  const[err,setErr]=useState('');
+  const[busy,setBusy]=useState(false);
+  async function go(){
+    setBusy(true);setErr('');
+    const r=await onJoin(code.trim().toUpperCase());
+    if(r&&r.error)setErr(r.error);
+    setBusy(false);
+  }
+  return(<div className="scr setup">
+    <button className="back-btn" onClick={onBack}>← All games</button>
+    <div className="setup-title">Join a Table</div>
+    <div className="inp-wrap">
+      <div className="inp-label">Table code</div>
+      <input className="inp inp-code" value={code} onChange={e=>setCode(e.target.value.toUpperCase().slice(0,6))} placeholder="ABC123" maxLength={6} autoFocus/>
+    </div>
+    {err&&<div className="warn">⚠️ {err}</div>}
+    <button className="btn btn-main" disabled={code.length<6||busy} onClick={go}>{busy?'Finding your table…':'Join Table'}</button>
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// SKULL KING PAD
+// ─────────────────────────────────────────────────────────
+function SKPad({room,save,round,setRound}){
+  const players=playerList(room);
+  const[bonusFor,setBonusFor]=useState(null);
+  function upd(pid,patch){
+    const cur=cell(room,'sk',round,pid);
+    save({...room,sk:{...(room.sk||{}),['r'+round]:{...((room.sk||{})['r'+round]||{}),[pid]:{...cur,...patch}}}});
+  }
+  const trickSum=players.reduce((s,p)=>s+(cell(room,'sk',round,p.pid).tricks||0),0);
+  const allEntered=players.every(p=>{const c=cell(room,'sk',round,p.pid);return c.bid!=null&&c.tricks!=null});
+  return(<React.Fragment>
+    <div className="round-bar">
+      {range(10).map(i=>{
+        const r=i+1;
+        const done=players.every(p=>cell(room,'sk',r,p.pid).bid!=null);
+        return<button key={r} className={`round-pill${r===round?' on':done?' done':''}`} onClick={()=>setRound(r)}>R{r}</button>;
+      })}
+    </div>
+    <div className="pad-body">
+      {players.map(p=>{
+        const c=cell(room,'sk',round,p.pid);
+        const pts=skRoundPts(c,round);
+        const bonus=skBonusTotal(c.bonus);
+        return(<div key={p.pid} className="pcard">
+          <div className="pcard-head">
+            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-pts">{pts==null?'—':pts>0?`+${pts}`:pts}<small>total {skTotal(room,p.pid)}</small></div>
+          </div>
+          <StRow label="Bid"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
+          <StRow label="Tricks won"><Stepper val={c.tricks} set={v=>upd(p.pid,{tricks:v})} max={round}/></StRow>
+          <StRow label="Bonus points" sub={bonus>0?`+${bonus} pts${skBidOK(c.bid||0,c.tricks||0)?'':' (needs exact bid!)'}`:'14s, captures & alliances'}>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setBonusFor(p.pid)}>{bonus>0?`+${bonus} ✎`:'+ Add'}</button>
+          </StRow>
+        </div>);
+      })}
+      {allEntered&&trickSum!==round&&<div className="warn">⚠️ Tricks add up to {trickSum}, but {round} were played this round.</div>}
+      {allEntered&&trickSum===round&&<div className="okline">✓ Round {round} accounts for all {round} trick{round>1?'s':''}.</div>}
+    </div>
+    {bonusFor&&<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setBonusFor(null)}>
+      <div className="modal-sheet">
+        <div className="modal-title">Bonuses — {players.find(p=>p.pid===bonusFor)?.name}</div>
+        {SK_BONUSES.map(row=>{
+          const c=cell(room,'sk',round,bonusFor);
+          const b=c.bonus||{};
+          return(<StRow key={row.key} label={row.label} sub={`+${row.pts} each`}>
+            <Stepper val={b[row.key]} set={v=>upd(bonusFor,{bonus:{...b,[row.key]:v}})} max={row.max}/>
+          </StRow>);
+        })}
+        <button className="btn btn-main" onClick={()=>setBonusFor(null)}>Done</button>
+      </div>
+    </div>}
+  </React.Fragment>);
+}
+
+// ─────────────────────────────────────────────────────────
+// ANTIQUITY QUEST PAD
+// ─────────────────────────────────────────────────────────
+function AQPad({room,save,round,setRound}){
+  const players=playerList(room);
+  const nRounds=room.options?.aqRounds||1;
+  const adv=!!room.options?.aqAdv;
+  function upd(pid,patch){
+    const cur=cell(room,'aq',round,pid);
+    save({...room,aq:{...(room.aq||{}),['r'+round]:{...((room.aq||{})['r'+round]||{}),[pid]:{...cur,...patch,touched:true}}}});
+  }
+  function setFirstOut(pid){
+    // exclusive toggle — the 500 bonus itself is derived in aqBonus500()
+    const rd={...((room.aq||{})['r'+round]||{})};
+    players.forEach(p=>{rd[p.pid]={...(rd[p.pid]||{}),firstOut:p.pid===pid?!(rd[p.pid]||{}).firstOut:false,touched:!!(rd[p.pid]||{}).touched||p.pid===pid}});
+    save({...room,aq:{...(room.aq||{}),['r'+round]:rd}});
+  }
+  return(<React.Fragment>
+    <div className="round-bar">
+      {range(nRounds).map(i=>{
+        const r=i+1;
+        const done=players.every(p=>cell(room,'aq',r,p.pid).touched);
+        return<button key={r} className={`round-pill${r===round?' on':done?' done':''}`} onClick={()=>setRound(r)}>Round {r}</button>;
+      })}
+    </div>
+    <div className="pad-body">
+      {players.map(p=>{
+        const c=cell(room,'aq',round,p.pid);
+        const b500=aqBonus500(room,round,p.pid);
+        const pts=aqRoundPts(c,b500);
+        return(<div key={p.pid} className="pcard">
+          <div className="pcard-head">
+            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-pts">{pts==null?'—':pts}<small>total {aqTotal(room,p.pid)}</small></div>
+          </div>
+          <StRow label="Went out first" sub={b500?'★ +500 explorer bonus earned':'500 with a Mixed + Standard + Perfect'}>
+            <Toggle on={!!c.firstOut} onToggle={()=>setFirstOut(p.pid)}/>
+          </StRow>
+          {AQ_COLLECTIONS.map(k=>(
+            <StRow key={k.key} label={k.label} sub={`${k.pts} pts · ${k.sub}`}>
+              <Stepper val={c[k.key]} set={v=>upd(p.pid,{[k.key]:v})}/>
+            </StRow>
+          ))}
+          <StRow label="Played Antiquities" sub="+25 each (all cards in your collection area)"><Stepper val={c.playedAnt} set={v=>upd(p.pid,{playedAnt:v})} max={200}/></StRow>
+          <StRow label="Played Treasures" sub="+50 each"><Stepper val={c.playedTre} set={v=>upd(p.pid,{playedTre:v})} max={99}/></StRow>
+          <StRow label="Antiquities left in hand/cache" sub="−25 each"><Stepper val={c.handAnt} set={v=>upd(p.pid,{handAnt:v})} neg max={99}/></StRow>
+          <StRow label="Treasures left in hand/cache" sub="−50 each"><Stepper val={c.handTre} set={v=>upd(p.pid,{handTre:v})} neg max={99}/></StRow>
+          <StRow label="Characters left (Remington / Tess)" sub="−100 each"><Stepper val={c.handChar} set={v=>upd(p.pid,{handChar:v})} neg max={20}/></StRow>
+          {adv&&<StRow label="Civilization bonus steps" sub="On Assignment: 1st=250, 2nd=+500, 3rd=+750… enter total ÷250">
+            <Stepper val={c.civBonus} set={v=>upd(p.pid,{civBonus:v})} max={40}/>
+          </StRow>}
+        </div>);
+      })}
+    </div>
+  </React.Fragment>);
+}
+
+// ─────────────────────────────────────────────────────────
+// ANOTHER MAN'S TREASURE PAD
+// ─────────────────────────────────────────────────────────
+function AMTPad({room,save,round,setRound}){
+  const players=playerList(room);
+  const prog=room.options?.amtMode==='prog';
+  const nRounds=prog?9:5;
+  const patterns=prog?amtTier(round).patterns:AMT_CLASSIC_PATTERNS;
+  function upd(pid,patch){
+    const cur=cell(room,'amt',round,pid);
+    save({...room,amt:{...(room.amt||{}),['r'+round]:{...((room.amt||{})['r'+round]||{}),[pid]:{...cur,...patch,touched:true}}}});
+  }
+  return(<React.Fragment>
+    <div className="round-bar">
+      {range(nRounds).map(i=>{
+        const r=i+1;
+        const done=players.every(p=>cell(room,'amt',r,p.pid).touched);
+        const el=[];
+        if(prog&&i%3===0)el.push(<span key={'t'+i} className="tier-lbl">{[6,8,10][i/3]}-card</span>);
+        el.push(<button key={r} className={`round-pill${r===round?' on':done?' done':''}`} onClick={()=>setRound(r)}>R{r}</button>);
+        return el;
+      })}
+    </div>
+    <div className="pad-body">
+      {players.map(p=>{
+        const c=cell(room,'amt',round,p.pid);
+        const used=amtUsedPatterns(room,p.pid,round);
+        const pts=amtRoundPts(c,prog);
+        return(<div key={p.pid} className="pcard">
+          <div className="pcard-head">
+            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-pts">{pts==null?'—':pts}<small>total {amtTotal(room,p.pid)}</small></div>
+          </div>
+          <div className="strow-lbl" style={{padding:'4px 0 0'}}>Collection pattern played<small>each pattern once per game — greyed = already used</small></div>
+          <div className="patt-grid">
+            {patterns.map(pt=>{
+              const isUsed=used[pt.key]!=null;
+              const sel=c.pattern===pt.key;
+              return(<button key={pt.key} className={`patt${sel?' sel':''}${isUsed?' used':''}`}
+                onClick={()=>{if(isUsed)return;upd(p.pid,{pattern:sel?null:pt.key})}}>
+                {pt.label}
+                <span className="pmark">{sel?'✓':isUsed?`R${used[pt.key]}`:''}</span>
+              </button>);
+            })}
+          </div>
+          <StRow label="Treasure cards left" sub="+5 each"><Stepper val={c.treas} set={v=>upd(p.pid,{treas:v})} neg max={30}/></StRow>
+          <StRow label="Wilds left (1–6 / 6–11)" sub="+10 each"><Stepper val={c.w10} set={v=>upd(p.pid,{w10:v})} neg max={6}/></StRow>
+          <StRow label="Wilds left (1–11)" sub="+15 each"><Stepper val={c.w15} set={v=>upd(p.pid,{w15:v})} neg max={3}/></StRow>
+          {prog&&<StRow label="☺ Smileys played" sub="−10 each (bonus!)"><Stepper val={c.smilePlay} set={v=>upd(p.pid,{smilePlay:v})} max={12}/></StRow>}
+          {prog&&<StRow label="☺ Smileys stuck in hand" sub="+10 each"><Stepper val={c.smileHand} set={v=>upd(p.pid,{smileHand:v})} neg max={12}/></StRow>}
+        </div>);
+      })}
+    </div>
+  </React.Fragment>);
+}
+
+// ─────────────────────────────────────────────────────────
+// BOARD (all games)
+// ─────────────────────────────────────────────────────────
+function Board({room}){
+  const players=playerList(room);
+  const g=room.game;
+  const nRounds=g==='sk'?10:g==='aq'?(room.options?.aqRounds||1):(room.options?.amtMode==='prog'?9:5);
+  const prog=room.options?.amtMode==='prog';
+  const totals=players.map(p=>g==='sk'?skTotal(room,p.pid):g==='aq'?aqTotal(room,p.pid):amtTotal(room,p.pid));
+  const lowWins=g==='amt';
+  const best=lowWins?Math.min(...totals):Math.max(...totals);
+  return(<div className="pad-body board">
+    <table className="bd-table">
+      <thead><tr><th>Player</th>{range(nRounds).map(i=><th key={i}>R{i+1}</th>)}<th>Total</th></tr></thead>
+      <tbody>
+        {players.map((p,i)=>{
+          const isLead=totals[i]===best&&players.length>1;
+          return(<tr key={p.pid} className={isLead?'bd-lead':''}>
+            <td>{p.name}{g==='amt'&&<span style={{fontSize:10,color:'var(--ink2)'}}> · {amtPatternCount(room,p.pid)} patt.</span>}</td>
+            {range(nRounds).map(ri=>{
+              const r=ri+1;
+              const pts=g==='sk'?skRoundPts(cell(room,'sk',r,p.pid),r):g==='aq'?aqRoundPts(cell(room,'aq',r,p.pid),aqBonus500(room,r,p.pid)):amtRoundPts(cell(room,'amt',r,p.pid),prog);
+              return<td key={r} className={pts<0?'neg':''}>{pts==null?'·':pts}</td>;
+            })}
+            <td className="bd-total">{totals[i]}</td>
+          </tr>);
+        })}
+      </tbody>
+    </table>
+    <div style={{fontSize:12,fontWeight:700,color:'var(--ink2)',padding:'10px 4px',textAlign:'center'}}>
+      {lowWins?'Lowest score wins · ties go to most patterns completed':'Highest score wins'}
+    </div>
+  </div>);
+}
+
+function WinnerModal({room,onClose,onNewGame}){
+  const players=playerList(room);
+  const g=room.game;
+  const totals=players.map(p=>({p,t:g==='sk'?skTotal(room,p.pid):g==='aq'?aqTotal(room,p.pid):amtTotal(room,p.pid),patt:g==='amt'?amtPatternCount(room,p.pid):0}));
+  totals.sort((a,b)=>g==='amt'?(a.t-b.t)||(b.patt-a.patt):b.t-a.t);
+  const w=totals[0];
+  const gm=gameById(g);
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="win-banner">
+        <div className="win-em">{g==='sk'?'🏴‍☠️':g==='aq'?'🏛️':'🚐'}</div>
+        <div className="win-name">{w.p.name} wins!</div>
+        <div className="win-sub">{g==='amt'?`${w.t} points (lowest) · ${w.patt} patterns`:`${w.t} points`}</div>
+      </div>
+      {totals.slice(1).map(({p,t})=><div key={p.pid} className="strow"><div className="strow-lbl">{p.name}</div><div className="stval">{t}</div></div>)}
+      <button className="btn btn-main" onClick={onNewGame}>{gm.emoji} New Game</button>
+      <button className="btn btn-ghost" onClick={onClose}>Back to Scores</button>
+    </div>
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// ROOM SHELL
+// ─────────────────────────────────────────────────────────
+function Room({room,save,onLeave}){
+  const g=gameById(room.game);
+  const[tab,setTab]=useState('score');
+  const[round,setRound]=useState(room.round||1);
+  const[showWin,setShowWin]=useState(false);
+  const[confirmLeave,setConfirmLeave]=useState(false);
+  useEffect(()=>{if(room.round&&room.round!==round)setRound(room.round)},[room.round]);
+  function changeRound(r){setRound(r);save({...room,round:r})}
+  const Pad=room.game==='sk'?SKPad:room.game==='aq'?AQPad:AMTPad;
+  return(<div className={`pad ${g.theme}`} style={{position:'relative',flex:1,overflow:'hidden'}}>
+    <div className="hdr">
+      <div className="hdr-title">{g.emoji} {g.title}<small>Grandpa Beck's Scorepad</small></div>
+      <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
+      <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>
+    </div>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
+      {tab==='score'?<Pad room={room} save={save} round={round} setRound={changeRound}/>:<Board room={room}/>}
+    </div>
+    <div className="tabbar">
+      <button className={`tab${tab==='score'?' on':''}`} onClick={()=>setTab('score')}><span className="tico">✏️</span>Score</button>
+      <button className={`tab${tab==='board'?' on':''}`} onClick={()=>setTab('board')}><span className="tico">🏆</span>Standings</button>
+      <button className="tab" onClick={()=>setShowWin(true)}><span className="tico">🎉</span>Finish</button>
+    </div>
+    {showWin&&<WinnerModal room={room} onClose={()=>setShowWin(false)} onNewGame={onLeave}/>}
+    {confirmLeave&&<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmLeave(false)}>
+      <div className="modal-sheet">
+        <div className="modal-title">Leave this table?</div>
+        <div className="modal-body">The scorepad stays saved under code <strong>{room.code}</strong> — anyone can rejoin with it.</div>
+        <button className="btn btn-danger" onClick={onLeave}>Leave Table</button>
+        <button className="btn btn-ghost" onClick={()=>setConfirmLeave(false)}>Stay</button>
+      </div>
+    </div>}
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// APP
+// ─────────────────────────────────────────────────────────
+function App(){
+  const[view,setView]=useState('hub'); // hub | setup:<id> | join | room
+  const[fbReady,setFbReady]=useState(false);
+  const[room,setRoom]=useState(null);
+  const codeRef=useRef(null);
+  const unsubRef=useRef(null);
+  const localRef=useRef(false);
+
+  useEffect(()=>{
+    const cfg=loadFbCfg()||BUILT_IN;
+    const db=initFb(cfg);if(db)setFbReady(true);
+    const saved=localStorage.getItem('gb_session');
+    if(saved&&db){
+      fbGet('games/'+saved).then(r=>{if(r&&r.gb){subscribe(saved);setView('room')}else localStorage.removeItem('gb_session')});
+    }
+  },[]);
+
+  function subscribe(code){
+    codeRef.current=code;
+    if(unsubRef.current)unsubRef.current();
+    unsubRef.current=fbOn('games/'+code,v=>{if(v)setRoom(v)});
+    localStorage.setItem('gb_session',code);
+  }
+
+  async function createRoom(gameId,names,options){
+    const code=mkCode();
+    const players={};
+    names.forEach((n,i)=>{players['p'+i]={name:n,ord:i}});
+    const r={code,hostId:getMyId(),gb:true,game:gameId,phase:'play',round:1,createdAt:Date.now(),options,players};
+    // Never await the write — Firebase queues it locally and fbOn echoes the
+    // cached value immediately, so table creation works even on a flaky signal.
+    if(fbReady){fbSet('games/'+code,r);subscribe(code)}
+    else{localRef.current=true;codeRef.current=code}
+    setRoom(r);
+    setView('room');
+  }
+
+  async function joinRoom(code){
+    if(!fbReady)return{error:'No connection — joining needs internet.'};
+    const r=await fbGet('games/'+code);
+    if(!r)return{error:'No table found with that code.'};
+    if(!r.gb)return{error:'That code belongs to the classic Skull King app.'};
+    subscribe(code);setView('room');
+    return null;
+  }
+
+  function save(next){
+    setRoom(next);
+    if(!localRef.current&&codeRef.current)fbSet('games/'+codeRef.current,next);
+  }
+
+  function leave(){
+    if(unsubRef.current){unsubRef.current();unsubRef.current=null}
+    localStorage.removeItem('gb_session');
+    codeRef.current=null;localRef.current=false;
+    setRoom(null);setView('hub');
+  }
+
+  if(view==='room'&&room)return<Room room={room} save={save} onLeave={leave}/>;
+  if(view==='room'&&!room)return<div className="scr" style={{alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--ink2)'}}>Setting the table…</div>;
+  if(view==='join')return<Join onBack={()=>setView('hub')} onJoin={joinRoom}/>;
+  if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom}/>;
+  return<Hub fbReady={fbReady} onCreate={id=>setView('setup:'+id)} onJoin={()=>setView('join')}/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

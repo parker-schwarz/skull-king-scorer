@@ -10,13 +10,12 @@ store, works on any phone. Try it live: open `scorepad.html` on any device.
 up and thrown away. This scorepad ends every single game on a Grandpa Beck's
 branded screen with three things on it:
 
-1. **Email signup** — "Stay at Grandpa's Table" capture on the winner screen,
-   at the exact moment the table is happy and laughing. Wires directly into
+1. **Email signup** — the site's own "A gift from Grandpa" newsletter popup
+   (name + email, 10% off), recreated on the winner screen at the exact moment
+   the table is happy and laughing. Wires directly into
    Klaviyo/Mailchimp/Shopify (currently a demo stub).
-2. **Cross-sell** — whoever just finished Skull King sees Antiquity Quest and
-   Another Man's Treasure with a shop link. The three games advertise each other.
-3. **Share button** — "Parker just won Skull King!" posts with a link to
-   grandpabecksgames.com. Winners brag; the brand rides along.
+2. **Shop link** — one "Shop All Grandpa Beck's Games" button into the full
+   catalog, so it stays current as new games launch without touching the app.
 
 **It solves a real problem the company already acknowledges.** The rulebooks
 say "Out of score sheets? Print or order more at GrandpaBecksGames.com." The

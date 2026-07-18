@@ -118,6 +118,19 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .seg-btn.on{background:var(--paper2);color:var(--accent);box-shadow:0 1px 5px rgba(58,44,28,.15)}
 .info-note{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--accent-soft);border-radius:var(--radius-sm);padding:11px 13px;line-height:1.5}
 
+/* ── LOBBY ── */
+.code-disp{background:var(--teal);border-radius:var(--radius);padding:20px 16px;text-align:center;cursor:pointer;border:1px solid var(--gold)}
+.code-lbl{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.code-val{font-family:var(--f-title);font-weight:900;font-size:44px;letter-spacing:.14em;color:#fff;margin:4px 0 2px}
+.code-sub{font-size:12px;font-weight:700;color:rgba(255,255,255,.75)}
+.lobby-list{display:flex;flex-direction:column;gap:8px}
+.lobby-row{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px}
+.lobby-row.me{border-color:var(--red)}
+.lobby-av{font-size:19px}
+.lobby-name{font-size:15.5px;font-weight:800;flex:1}
+.lobby-tag{font-size:9.5px;font-weight:900;letter-spacing:.12em;color:var(--red);border:1.5px solid var(--red);border-radius:5px;padding:2px 6px}
+.lobby-tag.host{color:var(--gold);border-color:var(--gold)}
+
 /* ── PAD ── */
 .pad{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .round-bar{display:flex;gap:6px;padding:11px 16px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
@@ -383,24 +396,18 @@ function Hub({onCreate,onJoin,fbReady}){
 // ─────────────────────────────────────────────────────────
 function Setup({gameId,onBack,onStart}){
   const g=gameById(gameId);
-  const maxP=gameId==='amt'?6:8;
-  const[names,setNames]=useState(['','']);
+  const[name,setName]=useState('');
   const[aqRounds,setAqRounds]=useState(3);
   const[aqAdv,setAqAdv]=useState(false);
   const[amtMode,setAmtMode]=useState('classic');
-  const good=names.filter(n=>n.trim()).length>=2;
-  function setName(i,v){setNames(ns=>ns.map((n,j)=>j===i?v:n))}
+  const good=!!name.trim();
   return(<div className={`scr setup ${g.theme}`}>
     <button className="back-btn" onClick={onBack}>← All games</button>
     <div className="setup-title">{g.emoji} {g.title}</div>
-    <div className="inp-label">Players (in seating order)</div>
-    {names.map((n,i)=>(
-      <div key={i} className="pl-row">
-        <input className="inp" value={n} onChange={e=>setName(i,e.target.value)} placeholder={`Player ${i+1}`} maxLength={16}/>
-        {names.length>2&&<button className="pl-x" onClick={()=>setNames(ns=>ns.filter((_,j)=>j!==i))}>✕</button>}
-      </div>
-    ))}
-    {names.length<maxP&&<button className="add-pl" onClick={()=>setNames(ns=>[...ns,''])}>+ Add player</button>}
+    <div className="inp-wrap">
+      <div className="inp-label">Your name</div>
+      <input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Grandpa…" maxLength={16} autoFocus/>
+    </div>
 
     {gameId==='aq'&&<React.Fragment>
       <div className="inp-label">Rounds</div>
@@ -422,21 +429,22 @@ function Setup({gameId,onBack,onStart}){
       {amtMode==='prog'&&<div className="info-note">Progressive: three 6-card rounds, three 8-card rounds, three 10-card rounds — each tier has its own patterns, plus ☺ smiley bonuses (−10 played / +10 stuck in hand).</div>}
     </React.Fragment>}
 
-    <div className="info-note">A 6-letter table code is created so everyone can open this scorepad live on their own phone.</div>
+    <div className="info-note">You'll get a <strong>6-letter table code</strong>. Everyone playing joins on their own phone, keeps their own scorecard, and the standings update live. Once your table is full, hit Start.</div>
     <button className="btn btn-main" disabled={!good} onClick={()=>{
       const opts=gameId==='aq'?{aqRounds,aqAdv}:gameId==='amt'?{amtMode}:{};
-      onStart(gameId,names.map(n=>n.trim()).filter(Boolean),opts);
-    }}>{g.emoji} Deal Me In</button>
+      onStart(gameId,name.trim(),opts);
+    }}>{g.emoji} Create Table</button>
   </div>);
 }
 
 function Join({onBack,onJoin}){
   const[code,setCode]=useState('');
+  const[name,setName]=useState('');
   const[err,setErr]=useState('');
   const[busy,setBusy]=useState(false);
   async function go(){
     setBusy(true);setErr('');
-    const r=await onJoin(code.trim().toUpperCase());
+    const r=await onJoin(code.trim().toUpperCase(),name.trim());
     if(r&&r.error)setErr(r.error);
     setBusy(false);
   }
@@ -447,20 +455,66 @@ function Join({onBack,onJoin}){
       <div className="inp-label">Table code</div>
       <input className="inp inp-code" value={code} onChange={e=>setCode(e.target.value.toUpperCase().slice(0,6))} placeholder="ABC123" maxLength={6} autoFocus/>
     </div>
+    <div className="inp-wrap">
+      <div className="inp-label">Your name</div>
+      <input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Grandma…" maxLength={16}/>
+    </div>
     {err&&<div className="warn">⚠️ {err}</div>}
-    <button className="btn btn-main" disabled={code.length<6||busy} onClick={go}>{busy?'Finding your table…':'Join Table'}</button>
+    <button className="btn btn-main" disabled={code.length<6||!name.trim()||busy} onClick={go}>{busy?'Finding your table…':'Join Table'}</button>
+  </div>);
+}
+
+// ─────────────────────────────────────────────────────────
+// LOBBY — everyone joins on their own phone, host starts
+// ─────────────────────────────────────────────────────────
+function Lobby({room,myId,write,onLeave}){
+  const g=gameById(room.game);
+  const players=playerList(room);
+  const isHost=room.hostId===myId;
+  const maxP=room.game==='amt'?6:8;
+  function copy(){if(navigator.clipboard)navigator.clipboard.writeText(room.code).catch(()=>{})}
+  return(<div className={`scr ${g.theme}`}>
+    <div className="hdr">
+      <div className="hdr-title">{g.emoji} {g.title}<small>Grandpa Beck's Scorepad</small></div>
+      <button className="icon-btn" onClick={onLeave}>🚪</button>
+    </div>
+    <div className="setup" style={{flex:1}}>
+      <div className="code-disp" onClick={copy}>
+        <div className="code-lbl">Table code — tap to copy</div>
+        <div className="code-val">{room.code}</div>
+        <div className="code-sub">Everyone joins on their own phone</div>
+      </div>
+      <div className="inp-label">At the table ({players.length}/{maxP})</div>
+      <div className="lobby-list">
+        {players.map(p=>(
+          <div key={p.pid} className={`lobby-row${p.pid===myId?' me':''}`}>
+            <span className="lobby-av">{g.emoji}</span>
+            <span className="lobby-name">{p.name}</span>
+            {p.pid===room.hostId&&<span className="lobby-tag host">HOST</span>}
+            {p.pid===myId&&<span className="lobby-tag">YOU</span>}
+          </div>
+        ))}
+      </div>
+      {isHost
+        ?<React.Fragment>
+          <button className="btn btn-main" disabled={players.length<2} onClick={()=>write('phase','play')}>{g.emoji} Start Game</button>
+          {players.length<2&&<div className="info-note">Waiting for at least one more player to join with code <strong>{room.code}</strong>…</div>}
+        </React.Fragment>
+        :<div className="info-note">Waiting for <strong>{players.find(p=>p.pid===room.hostId)?.name||'the host'}</strong> to start the game…</div>}
+    </div>
   </div>);
 }
 
 // ─────────────────────────────────────────────────────────
 // SKULL KING PAD
 // ─────────────────────────────────────────────────────────
-function SKPad({room,save,round,setRound}){
+function SKPad({room,write,myId,round,setRound}){
   const players=playerList(room);
+  const me=players.filter(p=>p.pid===myId);
   const[bonusFor,setBonusFor]=useState(null);
   function upd(pid,patch){
     const cur=cell(room,'sk',round,pid);
-    save({...room,sk:{...(room.sk||{}),['r'+round]:{...((room.sk||{})['r'+round]||{}),[pid]:{...cur,...patch}}}});
+    write(`sk/r${round}/${pid}`,{...cur,...patch});
   }
   const trickSum=players.reduce((s,p)=>s+(cell(room,'sk',round,p.pid).tricks||0),0);
   const allEntered=players.every(p=>{const c=cell(room,'sk',round,p.pid);return c.bid!=null&&c.tricks!=null});
@@ -473,7 +527,7 @@ function SKPad({room,save,round,setRound}){
       })}
     </div>
     <div className="pad-body">
-      {players.map(p=>{
+      {me.map(p=>{
         const c=cell(room,'sk',round,p.pid);
         const pts=skRoundPts(c,round);
         const bonus=skBonusTotal(c.bonus);
@@ -511,19 +565,20 @@ function SKPad({room,save,round,setRound}){
 // ─────────────────────────────────────────────────────────
 // ANTIQUITY QUEST PAD
 // ─────────────────────────────────────────────────────────
-function AQPad({room,save,round,setRound}){
+function AQPad({room,write,myId,round,setRound}){
   const players=playerList(room);
+  const me=players.filter(p=>p.pid===myId);
   const nRounds=room.options?.aqRounds||1;
   const adv=!!room.options?.aqAdv;
   function upd(pid,patch){
     const cur=cell(room,'aq',round,pid);
-    save({...room,aq:{...(room.aq||{}),['r'+round]:{...((room.aq||{})['r'+round]||{}),[pid]:{...cur,...patch,touched:true}}}});
+    write(`aq/r${round}/${pid}`,{...cur,...patch,touched:true});
   }
   function setFirstOut(pid){
-    // exclusive toggle — the 500 bonus itself is derived in aqBonus500()
+    // exclusive toggle across the table — the 500 bonus itself is derived in aqBonus500()
     const rd={...((room.aq||{})['r'+round]||{})};
     players.forEach(p=>{rd[p.pid]={...(rd[p.pid]||{}),firstOut:p.pid===pid?!(rd[p.pid]||{}).firstOut:false,touched:!!(rd[p.pid]||{}).touched||p.pid===pid}});
-    save({...room,aq:{...(room.aq||{}),['r'+round]:rd}});
+    write(`aq/r${round}`,rd);
   }
   return(<React.Fragment>
     <div className="round-bar">
@@ -534,7 +589,7 @@ function AQPad({room,save,round,setRound}){
       })}
     </div>
     <div className="pad-body">
-      {players.map(p=>{
+      {me.map(p=>{
         const c=cell(room,'aq',round,p.pid);
         const b500=aqBonus500(room,round,p.pid);
         const pts=aqRoundPts(c,b500);
@@ -568,14 +623,15 @@ function AQPad({room,save,round,setRound}){
 // ─────────────────────────────────────────────────────────
 // ANOTHER MAN'S TREASURE PAD
 // ─────────────────────────────────────────────────────────
-function AMTPad({room,save,round,setRound}){
+function AMTPad({room,write,myId,round,setRound}){
   const players=playerList(room);
+  const me=players.filter(p=>p.pid===myId);
   const prog=room.options?.amtMode==='prog';
   const nRounds=prog?9:5;
   const patterns=prog?amtTier(round).patterns:AMT_CLASSIC_PATTERNS;
   function upd(pid,patch){
     const cur=cell(room,'amt',round,pid);
-    save({...room,amt:{...(room.amt||{}),['r'+round]:{...((room.amt||{})['r'+round]||{}),[pid]:{...cur,...patch,touched:true}}}});
+    write(`amt/r${round}/${pid}`,{...cur,...patch,touched:true});
   }
   return(<React.Fragment>
     <div className="round-bar">
@@ -589,7 +645,7 @@ function AMTPad({room,save,round,setRound}){
       })}
     </div>
     <div className="pad-body">
-      {players.map(p=>{
+      {me.map(p=>{
         const c=cell(room,'amt',round,p.pid);
         const used=amtUsedPatterns(room,p.pid,round);
         const pts=amtRoundPts(c,prog);
@@ -633,23 +689,25 @@ function Board({room}){
   const lowWins=g==='amt';
   const best=lowWins?Math.min(...totals):Math.max(...totals);
   return(<div className="pad-body board">
+    <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
     <table className="bd-table">
-      <thead><tr><th>Player</th>{range(nRounds).map(i=><th key={i}>R{i+1}</th>)}<th>Total</th></tr></thead>
+      <thead><tr><th>Player</th><th>Total</th>{range(nRounds).map(i=><th key={i}>R{i+1}</th>)}</tr></thead>
       <tbody>
         {players.map((p,i)=>{
           const isLead=totals[i]===best&&players.length>1;
           return(<tr key={p.pid} className={isLead?'bd-lead':''}>
             <td>{p.name}{g==='amt'&&<span style={{fontSize:10,color:'var(--ink2)'}}> · {amtPatternCount(room,p.pid)} patt.</span>}</td>
+            <td className="bd-total">{totals[i]}</td>
             {range(nRounds).map(ri=>{
               const r=ri+1;
               const pts=g==='sk'?skRoundPts(cell(room,'sk',r,p.pid),r):g==='aq'?aqRoundPts(cell(room,'aq',r,p.pid),aqBonus500(room,r,p.pid)):amtRoundPts(cell(room,'amt',r,p.pid),prog);
               return<td key={r} className={pts<0?'neg':''}>{pts==null?'·':pts}</td>;
             })}
-            <td className="bd-total">{totals[i]}</td>
           </tr>);
         })}
       </tbody>
     </table>
+    </div>
     <div style={{fontSize:12,fontWeight:700,color:'var(--ink2)',padding:'10px 4px',textAlign:'center'}}>
       {lowWins?'Lowest score wins · ties go to most patterns completed':'Highest score wins'}
     </div>
@@ -680,23 +738,21 @@ function WinnerModal({room,onClose,onNewGame}){
 // ─────────────────────────────────────────────────────────
 // ROOM SHELL
 // ─────────────────────────────────────────────────────────
-function Room({room,save,onLeave}){
+function Room({room,myId,write,onLeave}){
   const g=gameById(room.game);
   const[tab,setTab]=useState('score');
-  const[round,setRound]=useState(room.round||1);
+  const[round,setRound]=useState(1); // each player pages their own card freely
   const[showWin,setShowWin]=useState(false);
   const[confirmLeave,setConfirmLeave]=useState(false);
-  useEffect(()=>{if(room.round&&room.round!==round)setRound(room.round)},[room.round]);
-  function changeRound(r){setRound(r);save({...room,round:r})}
   const Pad=room.game==='sk'?SKPad:room.game==='aq'?AQPad:AMTPad;
   return(<div className={`pad ${g.theme}`} style={{position:'relative',flex:1,overflow:'hidden'}}>
     <div className="hdr">
-      <div className="hdr-title">{g.emoji} {g.title}<small>Grandpa Beck's Scorepad</small></div>
+      <div className="hdr-title">{g.emoji} {g.title}<small>{playerList(room).find(p=>p.pid===myId)?.name||''} — my scorecard</small></div>
       <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
       <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>
     </div>
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
-      {tab==='score'?<Pad room={room} save={save} round={round} setRound={changeRound}/>:<Board room={room}/>}
+      {tab==='score'?<Pad room={room} write={write} myId={myId} round={round} setRound={setRound}/>:<Board room={room}/>}
     </div>
     <div className="tabbar">
       <button className={`tab${tab==='score'?' on':''}`} onClick={()=>setTab('score')}><span className="tico">✏️</span>Score</button>
@@ -718,10 +774,20 @@ function Room({room,save,onLeave}){
 // ─────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────
+// apply a slash-path write to a plain object immutably (mirrors the Firebase write)
+function applyPath(obj,path,val){
+  const parts=path.split('/');
+  const clone={...obj};let cur=clone;
+  for(let i=0;i<parts.length-1;i++){cur[parts[i]]={...(cur[parts[i]]||{})};cur=cur[parts[i]]}
+  cur[parts[parts.length-1]]=val;
+  return clone;
+}
+
 function App(){
   const[view,setView]=useState('hub'); // hub | setup:<id> | join | room
   const[fbReady,setFbReady]=useState(false);
   const[room,setRoom]=useState(null);
+  const myId=getMyId();
   const codeRef=useRef(null);
   const unsubRef=useRef(null);
   const localRef=useRef(false);
@@ -731,7 +797,7 @@ function App(){
     const db=initFb(cfg);if(db)setFbReady(true);
     const saved=localStorage.getItem('gb_session');
     if(saved&&db){
-      fbGet('games/'+saved).then(r=>{if(r&&r.gb){subscribe(saved);setView('room')}else localStorage.removeItem('gb_session')});
+      fbGet('games/'+saved).then(r=>{if(r&&r.gb&&(r.players||{})[myId]){subscribe(saved);setView('room')}else localStorage.removeItem('gb_session')});
     }
   },[]);
 
@@ -742,11 +808,10 @@ function App(){
     localStorage.setItem('gb_session',code);
   }
 
-  async function createRoom(gameId,names,options){
+  function createRoom(gameId,myName,options){
     const code=mkCode();
-    const players={};
-    names.forEach((n,i)=>{players['p'+i]={name:n,ord:i}});
-    const r={code,hostId:getMyId(),gb:true,game:gameId,phase:'play',round:1,createdAt:Date.now(),options,players};
+    const r={code,hostId:myId,gb:true,game:gameId,phase:'lobby',round:1,createdAt:Date.now(),options,
+      players:{[myId]:{name:myName,ord:0}}};
     // Never await the write — Firebase queues it locally and fbOn echoes the
     // cached value immediately, so table creation works even on a flaky signal.
     if(fbReady){fbSet('games/'+code,r);subscribe(code)}
@@ -755,18 +820,27 @@ function App(){
     setView('room');
   }
 
-  async function joinRoom(code){
+  async function joinRoom(code,name){
     if(!fbReady)return{error:'No connection — joining needs internet.'};
     const r=await fbGet('games/'+code);
     if(!r)return{error:'No table found with that code.'};
     if(!r.gb)return{error:'That code belongs to the classic Skull King app.'};
+    if(!(r.players||{})[myId]){
+      const maxP=r.game==='amt'?6:8;
+      const others=Object.values(r.players||{});
+      if(others.length>=maxP)return{error:'That table is full.'};
+      const ord=others.reduce((m,p)=>Math.max(m,p.ord||0),-1)+1;
+      fbSet(`games/${code}/players/${myId}`,{name,ord});
+    }
     subscribe(code);setView('room');
     return null;
   }
 
-  function save(next){
-    setRoom(next);
-    if(!localRef.current&&codeRef.current)fbSet('games/'+codeRef.current,next);
+  // Path-scoped writes so every player can score their own card at the
+  // same time without clobbering anyone else's.
+  function write(path,val){
+    setRoom(r=>r?applyPath(r,path,val):r);
+    if(!localRef.current&&codeRef.current)fbSet(`games/${codeRef.current}/${path}`,val);
   }
 
   function leave(){
@@ -776,7 +850,10 @@ function App(){
     setRoom(null);setView('hub');
   }
 
-  if(view==='room'&&room)return<Room room={room} save={save} onLeave={leave}/>;
+  if(view==='room'&&room){
+    if(room.phase==='lobby')return<Lobby room={room} myId={myId} write={write} onLeave={leave}/>;
+    return<Room room={room} myId={myId} write={write} onLeave={leave}/>;
+  }
   if(view==='room'&&!room)return<div className="scr" style={{alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--ink2)'}}>Setting the table…</div>;
   if(view==='join')return<Join onBack={()=>setView('hub')} onJoin={joinRoom}/>;
   if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom}/>;

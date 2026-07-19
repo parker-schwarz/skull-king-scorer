@@ -25,8 +25,8 @@ AQ's 500-point explorer bonus computes itself, Skull King checks that tricks
 add up each round).
 
 **It matches the brand.** Site palette and type (Figtree, brick red, dark
-teal, cream, gold), each game themed to its own box art, how-to-play video
-links pulled from the printed rulebooks.
+teal, cream, gold), the real badge logo in the header, real box art on every
+game card, and how-to-play video links pulled from the printed rulebooks.
 
 ## How it works
 
@@ -37,7 +37,6 @@ links pulled from the printed rulebooks.
 
 ## Easy next steps if they bite
 
-- Real box art and the badge logo in place of the emoji/CSS stand-ins
 - Email capture wired to their actual list provider
 - QR code on the physical score pads / box inserts pointing at the app
 - Deep links to each game's real product page

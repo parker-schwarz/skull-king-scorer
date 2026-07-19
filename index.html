@@ -189,6 +189,16 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .round-nav{display:flex;align-items:center;gap:10px;margin-top:16px}
 .round-nav .btn-next{flex:1}
 .round-nav-end{flex:1;text-align:center;font-size:12.5px;font-weight:700;color:var(--ink2)}
+/* Collapsible scorecards (shown when you score for more than one player) */
+.pcard.col{padding:0;overflow:hidden}
+.pcard.col .pcard-head{margin:0;padding:13px 14px;user-select:none;-webkit-user-select:none}
+.pcard.col>*:not(.pcard-head){padding-left:14px;padding-right:14px}
+.pcard.col>*:last-child{padding-bottom:13px}
+.pcard-caret{display:inline-block;width:16px;color:var(--ink3);font-size:12px}
+/* Add-a-guest input */
+.addguest{display:flex;gap:8px;align-items:center;margin:2px 0 4px}
+.addguest .inp{flex:1}
+.addguest .btn-sm{flex-shrink:0}
 .pad-foot{position:absolute;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--paper) 30%);display:flex;gap:9px}
 .tabbar{display:flex;border-top:2px solid var(--line);background:var(--paper2);flex-shrink:0}
 .tab{flex:1;border:none;background:none;padding:10px 4px calc(9px + env(safe-area-inset-bottom));font-family:var(--f-ui);font-weight:800;font-size:12px;color:var(--ink2);cursor:pointer}
@@ -299,6 +309,15 @@ function mkCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({
 const range=n=>Array.from({length:n},(_,i)=>i);
 function playerList(room){return Object.entries(room.players||{}).map(([pid,p])=>({pid,...p})).sort((a,b)=>(a.ord||0)-(b.ord||0))}
 function cell(room,gk,r,pid){return(((room[gk]||{})['r'+r]||{})[pid])||{}}
+// Players this device scores: yourself plus any "guests" you added (a kid with no phone, etc.)
+const myPlayers=(room,myId)=>playerList(room).filter(p=>p.pid===myId||p.owner===myId);
+// Add a guest player owned by this device
+function addGuest(room,myId,write,name){
+  const nm=(name||'').trim();if(!nm)return;
+  const ord=playerList(room).reduce((m,p)=>Math.max(m,p.ord||0),-1)+1;
+  const id=myId+'~'+Math.random().toString(36).slice(2,7);
+  write('players/'+id,{name:nm,ord,owner:myId});
+}
 
 // ── SKULL KING scoring ──
 function skBidPts(bid,tricks,round){
@@ -521,6 +540,26 @@ function RoundNav({round,total,setRound}){
       : <span className="round-nav-end">Final round · tap 🎉 Finish for results</span>}
   </div>);
 }
+// Add a guest you'll score for on this device (someone at the table without a phone)
+function AddGuest({onAdd}){
+  const[n,setN]=useState('');
+  const go=()=>{if(n.trim()){onAdd(n);setN('')}};
+  return(<div className="addguest">
+    <input className="inp" value={n} onChange={e=>setN(e.target.value)} placeholder="Add someone without a phone…" maxLength={16}
+      onKeyDown={e=>{if(e.key==='Enter')go()}}/>
+    <button className="btn btn-ghost btn-sm" disabled={!n.trim()} onClick={go}>+ Add</button>
+  </div>);
+}
+// A scorecard that collapses to a summary row when you're managing more than one player
+function PlayerCard({name,ptsLabel,totalLabel,collapsible,open,onToggle,children}){
+  return(<div className={`pcard${collapsible?' col':''}`}>
+    <div className="pcard-head" onClick={collapsible?onToggle:undefined} style={collapsible?{cursor:'pointer'}:undefined}>
+      <div className="pcard-name">{collapsible&&<span className="pcard-caret">{open?'▾':'▸'}</span>}{name}</div>
+      <div className="pcard-pts">{ptsLabel}<small>{totalLabel}</small></div>
+    </div>
+    {(!collapsible||open)&&children}
+  </div>);
+}
 
 // ─────────────────────────────────────────────────────────
 // HUB
@@ -683,9 +722,14 @@ function Lobby({room,myId,write,onLeave}){
             <span className="lobby-name">{crown(p.name)}{p.name}</span>
             {p.pid===room.hostId&&<span className="lobby-tag host">HOST</span>}
             {p.pid===myId&&<span className="lobby-tag">YOU</span>}
+            {p.owner===myId&&<span className="lobby-tag">YOU SCORE</span>}
           </div>
         ))}
       </div>
+      {players.length<maxP&&<React.Fragment>
+        <div className="inp-label" style={{marginTop:2}}>Someone without a phone?</div>
+        <AddGuest onAdd={n=>addGuest(room,myId,write,n)}/>
+      </React.Fragment>}
       {isHost
         ?<React.Fragment>
           <button className="btn btn-main" disabled={players.length<2} onClick={()=>write('phase','play')}>{g.emoji} Start Game</button>
@@ -701,7 +745,10 @@ function Lobby({room,myId,write,onLeave}){
 // ─────────────────────────────────────────────────────────
 function SKPad({room,write,myId,round,setRound}){
   const players=playerList(room);
-  const me=players.filter(p=>p.pid===myId);
+  const me=myPlayers(room,myId);
+  const multi=me.length>1;
+  const[openSet,setOpenSet]=useState(()=>new Set(me[0]?[me[0].pid]:[]));
+  const toggle=pid=>setOpenSet(s=>{const n=new Set(s);n.has(pid)?n.delete(pid):n.add(pid);return n});
   const[bonusFor,setBonusFor]=useState(null);
   function upd(pid,patch){
     const cur=cell(room,'sk',round,pid);
@@ -723,11 +770,9 @@ function SKPad({room,write,myId,round,setRound}){
         const pts=skRoundPts(c,round);
         const bonus=skBonusTotal(c.bonus);
         const locked=!!c.bidLocked;
-        return(<div key={p.pid} className="pcard">
-          <div className="pcard-head">
-            <div className="pcard-name">{crown(p.name)}{p.name}</div>
-            <div className="pcard-pts">{pts==null?'—':pts>0?`+${pts}`:pts}<small>total {skTotal(room,p.pid)}</small></div>
-          </div>
+        return(<PlayerCard key={p.pid} name={<React.Fragment>{crown(p.name)}{p.name}</React.Fragment>}
+          ptsLabel={pts==null?'—':pts>0?`+${pts}`:pts} totalLabel={`total ${skTotal(room,p.pid)}`}
+          collapsible={multi} open={!multi||openSet.has(p.pid)} onToggle={()=>toggle(p.pid)}>
           {!locked?<React.Fragment>
             {/* Phase 1 — bid only, then lock it in before the round is played */}
             <StRow label="Your bid" sub="How many tricks will ye take?"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
@@ -745,8 +790,9 @@ function SKPad({room,write,myId,round,setRound}){
               <button className="btn btn-ghost btn-sm" onClick={()=>setBonusFor(p.pid)}>{bonus>0?`+${bonus} ✎`:'+ Add'}</button>
             </StRow>
           </React.Fragment>}
-        </div>);
+        </PlayerCard>);
       })}
+      <AddGuest onAdd={n=>addGuest(room,myId,write,n)}/>
       {allEntered&&trickSum!==round&&<div className="warn">⚠️ Tricks add up to {trickSum}, but {round} were played this round.</div>}
       {allEntered&&trickSum===round&&<div className="okline">✓ Round {round} accounts for all {round} trick{round>1?'s':''}.</div>}
       <RoundNav round={round} total={10} setRound={setRound}/>
@@ -772,7 +818,10 @@ function SKPad({room,write,myId,round,setRound}){
 // ─────────────────────────────────────────────────────────
 function AQPad({room,write,myId,round,setRound}){
   const players=playerList(room);
-  const me=players.filter(p=>p.pid===myId);
+  const me=myPlayers(room,myId);
+  const multi=me.length>1;
+  const[openSet,setOpenSet]=useState(()=>new Set(me[0]?[me[0].pid]:[]));
+  const toggle=pid=>setOpenSet(s=>{const n=new Set(s);n.has(pid)?n.delete(pid):n.add(pid);return n});
   const nRounds=room.options?.aqRounds||1;
   const adv=!!room.options?.aqAdv;
   function upd(pid,patch){
@@ -798,11 +847,9 @@ function AQPad({room,write,myId,round,setRound}){
         const c=cell(room,'aq',round,p.pid);
         const b500=aqBonus500(room,round,p.pid);
         const pts=aqRoundPts(c,b500);
-        return(<div key={p.pid} className="pcard">
-          <div className="pcard-head">
-            <div className="pcard-name">{crown(p.name)}{p.name}</div>
-            <div className="pcard-pts">{pts==null?'—':pts}<small>total {aqTotal(room,p.pid)}</small></div>
-          </div>
+        return(<PlayerCard key={p.pid} name={<React.Fragment>{crown(p.name)}{p.name}</React.Fragment>}
+          ptsLabel={pts==null?'—':pts} totalLabel={`total ${aqTotal(room,p.pid)}`}
+          collapsible={multi} open={!multi||openSet.has(p.pid)} onToggle={()=>toggle(p.pid)}>
           <StRow label="Went out first" sub={b500?'★ +500 explorer bonus earned':'500 with a Mixed + Standard + Perfect'}>
             <Toggle on={!!c.firstOut} onToggle={()=>setFirstOut(p.pid)}/>
           </StRow>
@@ -819,8 +866,9 @@ function AQPad({room,write,myId,round,setRound}){
           {adv&&<StRow label="Civilization bonus steps" sub="On Assignment: 1st=250, 2nd=+500, 3rd=+750… enter total ÷250">
             <Stepper val={c.civBonus} set={v=>upd(p.pid,{civBonus:v})} max={40}/>
           </StRow>}
-        </div>);
+        </PlayerCard>);
       })}
+      <AddGuest onAdd={n=>addGuest(room,myId,write,n)}/>
       <RoundNav round={round} total={nRounds} setRound={setRound}/>
     </div>
   </React.Fragment>);
@@ -831,7 +879,10 @@ function AQPad({room,write,myId,round,setRound}){
 // ─────────────────────────────────────────────────────────
 function AMTPad({room,write,myId,round,setRound}){
   const players=playerList(room);
-  const me=players.filter(p=>p.pid===myId);
+  const me=myPlayers(room,myId);
+  const multi=me.length>1;
+  const[openSet,setOpenSet]=useState(()=>new Set(me[0]?[me[0].pid]:[]));
+  const toggle=pid=>setOpenSet(s=>{const n=new Set(s);n.has(pid)?n.delete(pid):n.add(pid);return n});
   const prog=room.options?.amtMode==='prog';
   const nRounds=prog?9:5;
   const patterns=prog?amtTier(round).patterns:AMT_CLASSIC_PATTERNS;
@@ -855,11 +906,9 @@ function AMTPad({room,write,myId,round,setRound}){
         const c=cell(room,'amt',round,p.pid);
         const used=amtUsedPatterns(room,p.pid,round);
         const pts=amtRoundPts(c,prog);
-        return(<div key={p.pid} className="pcard">
-          <div className="pcard-head">
-            <div className="pcard-name">{crown(p.name)}{p.name}</div>
-            <div className="pcard-pts">{pts==null?'—':pts}<small>total {amtTotal(room,p.pid)}</small></div>
-          </div>
+        return(<PlayerCard key={p.pid} name={<React.Fragment>{crown(p.name)}{p.name}</React.Fragment>}
+          ptsLabel={pts==null?'—':pts} totalLabel={`total ${amtTotal(room,p.pid)}`}
+          collapsible={multi} open={!multi||openSet.has(p.pid)} onToggle={()=>toggle(p.pid)}>
           <div className="strow-lbl" style={{padding:'4px 0 0'}}>Collection pattern played<small>each pattern once per game — greyed = already used</small></div>
           <div className="patt-grid">
             {patterns.map(pt=>{
@@ -877,8 +926,9 @@ function AMTPad({room,write,myId,round,setRound}){
           <StRow label="Wilds left (1–11)" sub="+15 each"><Stepper val={c.w15} set={v=>upd(p.pid,{w15:v})} neg max={3}/></StRow>
           {prog&&<StRow label="☺ Smileys played" sub="−10 each (bonus!)"><Stepper val={c.smilePlay} set={v=>upd(p.pid,{smilePlay:v})} max={12}/></StRow>}
           {prog&&<StRow label="☺ Smileys stuck in hand" sub="+10 each"><Stepper val={c.smileHand} set={v=>upd(p.pid,{smileHand:v})} neg max={12}/></StRow>}
-        </div>);
+        </PlayerCard>);
       })}
+      <AddGuest onAdd={n=>addGuest(room,myId,write,n)}/>
       <RoundNav round={round} total={nRounds} setRound={setRound}/>
     </div>
   </React.Fragment>);
@@ -1160,7 +1210,7 @@ function Room({room,myId,write,onLeave}){
       <img className="hdr-logo" src={ASSETS.logo} alt="Grandpa Beck's Games"/>
       <div className="hdr-title" onTouchEnd={titleTap} onDoubleClick={e=>{e.preventDefault();setEgg(true)}}
         style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none',touchAction:'manipulation'}}>
-        {g.title}<small>{playerList(room).find(p=>p.pid===myId)?.name||''} — my scorecard</small></div>
+        {g.title}<small>{(()=>{const mine=myPlayers(room,myId);const meName=mine.find(p=>p.pid===myId)?.name||'';return mine.length>1?`scoring ${mine.length} cards`:`${meName} — my scorecard`;})()}</small></div>
       <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
       <button className="icon-btn" title="Rules & FAQ" onClick={()=>setShowHelp(true)}>❓</button>
       <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>

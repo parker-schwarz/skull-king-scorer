@@ -116,6 +116,9 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .seg-btn{flex:1;border:none;background:none;border-radius:9px;padding:9px 6px;font-family:var(--f-ui);font-weight:800;font-size:13.5px;color:var(--ink2);cursor:pointer}
 .seg-btn.on{background:var(--paper2);color:var(--accent);box-shadow:0 1px 5px rgba(58,44,28,.15)}
 .info-note{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--accent-soft);border-radius:var(--radius-sm);padding:11px 13px;line-height:1.5}
+/* "or" divider between Create Table and Join on the setup screen */
+.setup-or{display:flex;align-items:center;gap:12px;color:var(--ink3);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin:2px 0}
+.setup-or::before,.setup-or::after{content:"";flex:1;height:1px;background:var(--line)}
 
 /* ── LOBBY ── */
 .code-disp{background:var(--teal);border-radius:var(--radius);padding:20px 16px;text-align:center;cursor:pointer;border:1px solid var(--gold)}
@@ -549,7 +552,7 @@ function Hub({onCreate,onJoin,fbReady}){
 // ─────────────────────────────────────────────────────────
 // SETUP
 // ─────────────────────────────────────────────────────────
-function Setup({gameId,onBack,onStart}){
+function Setup({gameId,onBack,onStart,onJoin}){
   const g=gameById(gameId);
   const[name,setName]=useState('');
   const[aqRounds,setAqRounds]=useState(3);
@@ -591,6 +594,8 @@ function Setup({gameId,onBack,onStart}){
       const opts=gameId==='aq'?{aqRounds,aqAdv}:gameId==='amt'?{amtMode}:{};
       onStart(gameId,name.trim(),opts);
     }}>{g.emoji} Create Table</button>
+    <div className="setup-or"><span>or</span></div>
+    <button className="btn btn-outline" onClick={onJoin}>🔑 Join a Table with a Code</button>
   </div>);
 }
 
@@ -1156,7 +1161,7 @@ function App(){
   }
   if(view==='room'&&!room)return<div className="scr" style={{alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--ink2)'}}>Setting the table…</div>;
   if(view==='join')return<Join onBack={()=>setView('hub')} onJoin={joinRoom}/>;
-  if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom}/>;
+  if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom} onJoin={()=>setView('join')}/>;
   return<Hub fbReady={fbReady} onCreate={id=>setView('setup:'+id)} onJoin={()=>setView('join')}/>;
 }
 

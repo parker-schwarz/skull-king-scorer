@@ -137,6 +137,14 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .gift-inp:focus{border-color:#1D1D1F}
 .gift-inp::placeholder{color:#9a9aa0;font-weight:400}
 .gift-btn{text-transform:none;letter-spacing:0;font-size:17px;font-weight:600;border-radius:8px}
+
+/* ── EASTER EGGS ── */
+.egg-persona{font-size:44px;text-align:center;line-height:1}
+.egg-quote{font-size:14px;line-height:1.6;font-weight:600;font-style:italic;background:var(--paper);border-left:3px solid var(--gold);padding:11px 13px;border-radius:8px;color:var(--ink)}
+.egg-advice{background:var(--teal);border-radius:var(--radius);padding:18px 16px;text-align:center;border:1px solid var(--gold)}
+.egg-advice-lbl{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.egg-bid{font-size:76px;font-weight:900;color:#fff;line-height:1.05}
+.egg-quote-inv{font-size:13px;color:rgba(255,255,255,.85);font-style:italic;line-height:1.6;margin-top:6px}
 .vid-link{font-size:13px;font-weight:800;color:var(--red);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 
 /* ── PAD ── */
@@ -351,6 +359,121 @@ function amtUsedPatterns(room,pid,exceptRound){
 }
 function amtPatternCount(room,pid){const n=room.options?.amtMode==='prog'?9:5;let c=0;for(let r=1;r<=n;r++){if(cell(room,'amt',r,pid).pattern)c++}return c}
 
+// ─────────────────────────────────────────────────────────
+// EASTER EGGS — double-tap the game title in the header
+// ─────────────────────────────────────────────────────────
+
+// Skull King: the Oracle (ported from the original scorer)
+const QUIPS=[
+  "The bones never lie, matey.",
+  "Fortune favors the bold — and the well-advised.",
+  "Arrr, trust yer Oracle this round.",
+  "I've sailed these seas a thousand times.",
+  "Steel yer nerves and hold yer course.",
+];
+const ORDINALS=['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+function oracleAdvice(hand,round,numPlayers,playOrder){
+  const{pirates=0,skullKing=0,mermaids=0,escapes=0,blackHigh=0,blackMid=0,blackLow=0,colorHigh=0,colorMid=0,colorLow=0}=hand;
+  const total=pirates+skullKing+mermaids+escapes+blackHigh+blackMid+blackLow+colorHigh+colorMid+colorLow;
+  if(total===0)return{bid:0,text:"Enter yer cards above and the Oracle shall divine yer fate…"};
+  const rd=round<=2?0.14:round<=4?0.07:round<=6?0.0:round<=8?-0.07:-0.14;
+  const pf=numPlayers<=2?1.18:numPlayers<=3?1.08:numPlayers<=5?1.0:0.88;
+  const order=Math.max(1,Math.min(playOrder||1,numPlayers||4));
+  const posPercentile=numPlayers>1?(order-1)/(numPlayers-1):0.5;
+  const posAdj=(posPercentile-0.5)*0.20;
+  let exp=0;
+  exp+=pirates    *Math.min(0.97,Math.max(0.82, 0.90+rd*0.10));
+  exp+=skullKing  *Math.min(0.97,Math.max(0.76, 0.88+rd*0.10));
+  exp+=mermaids   *Math.min(0.90,Math.max(0.58, 0.76+rd*0.14));
+  exp+=blackHigh  *Math.min(0.95,Math.max(0.52, 0.85+rd*0.32));
+  exp+=blackMid   *Math.min(0.78,Math.max(0.10, 0.60+rd*0.55));
+  exp+=blackLow   *Math.min(0.46,Math.max(0.03, 0.22+rd*0.42));
+  exp+=colorHigh  *Math.min(0.68,Math.max(0.08, 0.50+rd*0.62));
+  exp+=colorMid   *Math.min(0.38,Math.max(0.02, 0.22+rd*0.52));
+  exp+=colorLow   *Math.min(0.14,Math.max(0.01, 0.05+rd*0.22));
+  exp+=posAdj;
+  exp*=pf;
+  const bid=Math.min(Math.max(0,Math.round(exp)),round);
+  const posLabel=ORDINALS[order-1]||`${order}th`;
+  const posNote=posPercentile>=0.75
+    ?`Going ${posLabel} — ye see the table before ye play.`
+    :posPercentile<=0.25
+      ?`Going ${posLabel} — ye lead blind, trust yer hand.`
+      :`Going ${posLabel} — middling position.`;
+  const q=QUIPS[Math.floor(Math.random()*QUIPS.length)];
+  let txt;
+  if(escapes>0&&escapes===total){
+    txt=`Pure escape hand — bid ZERO with confidence. Escapes always lose a trick. The Oracle sees no risk.`;
+  }else if(escapes>0&&escapes>=total-1&&blackLow+colorLow+colorMid===total-escapes){
+    txt=`Escape-heavy hand — lean toward ZERO. Yer non-escape cards are unlikely to win. ${posNote}`;
+  }else if(round<=2){
+    txt=bid===0?`Short hand — layin' low is safe. ${posNote}`:`Only ${round} card${round>1?'s':''} dealt — make it count. ${posNote}`;
+  }else if(bid===0){
+    txt=`Bid ZERO for +${10*round} pts if ye stay clean. ${round>=7?'These late rounds reward the daring!':posNote}`;
+  }else if(bid===round){
+    txt=`Claim ALL ${round} tricks — ${posNote} ${q}`;
+  }else if(round>=8&&bid<round/2){
+    txt=`Late game — yer hand be thin. Play safe at ${bid}. ${posNote}`;
+  }else{
+    txt=`${posNote} ${q}`;
+  }
+  return{bid,text:txt};
+}
+
+// Antiquity Quest: Professor Remington's Appraisal
+const REM_QUIPS=[
+  "Tess sends her regards. Ignore them.",
+  "A steady hand, a keen eye, and a wide-brimmed hat — the essentials of fieldwork.",
+  "Perfect Treasure: 1,500 points. Perfection pays, as I always say.",
+  "The discard pile tells a story. Read it before someone steals it.",
+  "The museum board is watching. So am I.",
+];
+function remingtonAppraise(room,myId,round){
+  const c=cell(room,'aq',round,myId);
+  const colls=(c.mixed||0)+(c.stdAnt||0)+(c.stdTre||0)+(c.perfAnt||0)+(c.perfTre||0);
+  const notes=[];
+  const missing=[];
+  if(!((c.mixed||0)>0))missing.push('Mixed');
+  if(!(((c.stdAnt||0)+(c.stdTre||0))>0))missing.push('Standard');
+  if(!(((c.perfAnt||0)+(c.perfTre||0))>0))missing.push('Perfect');
+  if(missing.length===0)notes.push("One of each collection type recorded — go out first and the 500-point bonus is yours.");
+  else notes.push(`Missing a ${missing.join(' and a ')} collection — the 500-point bonus demands one Mixed, one Standard, and one Perfect.`);
+  if((c.handChar||0)>0)notes.push(`${c.handChar} character card${c.handChar>1?'s':''} still in hand? That's ${(c.handChar||0)*100} points of pure embarrassment if the round ends now.`);
+  if(colls===0)notes.push("Not a single collection on the sheet. My last assistant moved faster — and she went rogue.");
+  else if(colls>=5)notes.push(`${colls} collections logged — you may go out whenever your cache allows. Don't dawdle.`);
+  const standings=playerList(room).map(p=>({pid:p.pid,t:aqTotal(room,p.pid)})).sort((a,b)=>b.t-a.t);
+  if(standings.length>1){
+    const rank=standings.findIndex(s=>s.pid===myId)+1;
+    if(rank===1)notes.push("You lead the expedition. Try not to let it go to your head.");
+    else notes.push(`${ORDINALS[rank-1]||rank+'th'} place. The museum does not display runner-up plaques.`);
+  }
+  return{notes:notes.slice(0,3),quip:REM_QUIPS[Math.floor(Math.random()*REM_QUIPS.length)]};
+}
+
+// Another Man's Treasure: the Deer's groovy wisdom
+const DEER_LINES=[
+  "Less is more, dude. Paul and Mona said so.",
+  "Keep on truckin' — the treasures pack themselves.",
+  "That polaroid's seen things, man.",
+  "Peace, love, and suited pairs.",
+  "The disco ball never lies.",
+  "One man's stuff is, like, another man's burden. Heavy.",
+];
+function deerWisdom(room,myId,round){
+  const prog=room.options?.amtMode==='prog';
+  const patterns=prog?amtTier(round).patterns:AMT_CLASSIC_PATTERNS;
+  const used=amtUsedPatterns(room,myId,round);
+  const open=patterns.filter(p=>used[p.key]==null);
+  const line=DEER_LINES[Math.floor(Math.random()*DEER_LINES.length)];
+  if(open.length===0)return{tip:"You've played every pattern this tier, man. Just ride the wave.",line};
+  const p=open[Math.floor(Math.random()*open.length)];
+  return{tip:`Far out… the ${p.label.toLowerCase().replace(/^1 /,'')} is calling your name.`,line};
+}
+
+// Type GRANDPA as your player name → bowler-hat crown on your scorecard
+const isGrandpa=n=>/^grandpa$/i.test((n||'').trim());
+const crown=n=>isGrandpa(n)?'🎩 ':'';
+
 // ── Shared bits ──
 function Toggle({on,onToggle}){return<div className={`tog ${on?'on':''}`} onClick={onToggle}/>}
 function Stepper({val,set,min=0,max=99,neg}){
@@ -523,7 +646,7 @@ function Lobby({room,myId,write,onLeave}){
         {players.map(p=>(
           <div key={p.pid} className={`lobby-row${p.pid===myId?' me':''}`}>
             <span className="lobby-av">{g.emoji}</span>
-            <span className="lobby-name">{p.name}</span>
+            <span className="lobby-name">{crown(p.name)}{p.name}</span>
             {p.pid===room.hostId&&<span className="lobby-tag host">HOST</span>}
             {p.pid===myId&&<span className="lobby-tag">YOU</span>}
           </div>
@@ -567,7 +690,7 @@ function SKPad({room,write,myId,round,setRound}){
         const bonus=skBonusTotal(c.bonus);
         return(<div key={p.pid} className="pcard">
           <div className="pcard-head">
-            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-name">{crown(p.name)}{p.name}</div>
             <div className="pcard-pts">{pts==null?'—':pts>0?`+${pts}`:pts}<small>total {skTotal(room,p.pid)}</small></div>
           </div>
           <StRow label="Bid"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
@@ -629,7 +752,7 @@ function AQPad({room,write,myId,round,setRound}){
         const pts=aqRoundPts(c,b500);
         return(<div key={p.pid} className="pcard">
           <div className="pcard-head">
-            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-name">{crown(p.name)}{p.name}</div>
             <div className="pcard-pts">{pts==null?'—':pts}<small>total {aqTotal(room,p.pid)}</small></div>
           </div>
           <StRow label="Went out first" sub={b500?'★ +500 explorer bonus earned':'500 with a Mixed + Standard + Perfect'}>
@@ -685,7 +808,7 @@ function AMTPad({room,write,myId,round,setRound}){
         const pts=amtRoundPts(c,prog);
         return(<div key={p.pid} className="pcard">
           <div className="pcard-head">
-            <div className="pcard-name">{p.name}</div>
+            <div className="pcard-name">{crown(p.name)}{p.name}</div>
             <div className="pcard-pts">{pts==null?'—':pts}<small>total {amtTotal(room,p.pid)}</small></div>
           </div>
           <div className="strow-lbl" style={{padding:'4px 0 0'}}>Collection pattern played<small>each pattern once per game — greyed = already used</small></div>
@@ -730,7 +853,7 @@ function Board({room}){
         {players.map((p,i)=>{
           const isLead=totals[i]===best&&players.length>1;
           return(<tr key={p.pid} className={isLead?'bd-lead':''}>
-            <td>{p.name}{g==='amt'&&<span style={{fontSize:10,color:'var(--ink2)'}}> · {amtPatternCount(room,p.pid)} patt.</span>}</td>
+            <td>{crown(p.name)}{p.name}{g==='amt'&&<span style={{fontSize:10,color:'var(--ink2)'}}> · {amtPatternCount(room,p.pid)} patt.</span>}</td>
             <td className="bd-total">{totals[i]}</td>
             {range(nRounds).map(ri=>{
               const r=ri+1;
@@ -774,7 +897,7 @@ function WinnerModal({room,onClose,onNewGame}){
     <div className="modal-sheet">
       <div className="win-banner">
         <div className="win-em">{g==='sk'?'🏴‍☠️':g==='aq'?'🏛️':'🚐'}</div>
-        <div className="win-name">{w.p.name} wins!</div>
+        <div className="win-name">{crown(w.p.name)}{w.p.name} wins!</div>
         <div className="win-sub">{g==='amt'?`${w.t} points (lowest) · ${w.patt} patterns`:`${w.t} points`}</div>
       </div>
       {totals.slice(1).map(({p,t})=><div key={p.pid} className="strow"><div className="strow-lbl">{p.name}</div><div className="stval">{t}</div></div>)}
@@ -800,6 +923,101 @@ function WinnerModal({room,onClose,onNewGame}){
 }
 
 // ─────────────────────────────────────────────────────────
+// EASTER EGG MODALS
+// ─────────────────────────────────────────────────────────
+function EggSheet({title,sub,onClose,children}){
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="modal-title">{title}</div>
+      {sub&&<div className="mkt-sub" style={{marginTop:-8}}>{sub}</div>}
+      {children}
+      <button className="btn btn-ghost" onClick={onClose}>Close</button>
+    </div>
+  </div>);
+}
+
+function OracleModal({round,numPlayers,onClose}){
+  const[hand,setHand]=useState({pirates:0,skullKing:0,mermaids:0,escapes:0,blackHigh:0,blackMid:0,blackLow:0,colorHigh:0,colorMid:0,colorLow:0});
+  const[playOrder,setPlayOrder]=useState(1);
+  const total=Object.values(hand).reduce((a,b)=>a+b,0);
+  const remaining=round-total;
+  function adj(key,d,max){
+    if(d>0&&total>=round)return;
+    setHand(h=>({...h,[key]:Math.max(0,Math.min(max,(h[key]||0)+d))}));
+  }
+  const advice=total>0?oracleAdvice(hand,round,numPlayers,playOrder):null;
+  const groups=[
+    {title:'Special Cards',cards:[
+      {key:'pirates',label:'Pirates',sub:'Beat all suits & trump',max:Math.min(5,round)},
+      {key:'skullKing',label:'Skull King',sub:'Beats Pirates (not Mermaids)',max:Math.min(1,round)},
+      {key:'mermaids',label:'Mermaids',sub:'Beat Skull King, lose to Pirates',max:Math.min(2,round)},
+      {key:'escapes',label:'Escapes',sub:'Always lose a trick',max:Math.min(5,round)},
+    ]},
+    {title:'Black Trump',cards:[
+      {key:'blackHigh',label:'Black 10–14',sub:'High trump',max:Math.min(5,round)},
+      {key:'blackMid',label:'Black 6–9',sub:'Mid trump',max:Math.min(4,round)},
+      {key:'blackLow',label:'Black 1–5',sub:'Low trump',max:Math.min(5,round)},
+    ]},
+    {title:'Colored Suits',cards:[
+      {key:'colorHigh',label:'Colored 11–14',sub:'High standard',max:Math.min(6,round)},
+      {key:'colorMid',label:'Colored 7–10',sub:'Mid standard',max:Math.min(6,round)},
+      {key:'colorLow',label:'Colored 1–6',sub:'Low standard',max:Math.min(6,round)},
+    ]},
+  ];
+  return(<EggSheet title="☠️ Ask the Oracle" sub={`Round ${round} · enter your ${round} card${round!==1?'s':''} (${total}/${round})`} onClose={onClose}>
+    <div className="inp-label">Your play order — first trick</div>
+    <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+      {Array.from({length:numPlayers},(_,i)=>i+1).map(pos=>(
+        <button key={pos} className={`round-pill${playOrder===pos?' on':''}`} onClick={()=>setPlayOrder(pos)}>{pos}</button>
+      ))}
+    </div>
+    {groups.map(gr=>(
+      <div key={gr.title}>
+        <div className="inp-label" style={{marginBottom:4}}>{gr.title}</div>
+        {gr.cards.map(row=>(
+          <StRow key={row.key} label={row.label} sub={row.sub}>
+            <div className="stctr">
+              <button className="stbtn" onClick={()=>adj(row.key,-1,row.max)} disabled={hand[row.key]<=0}>−</button>
+              <div className="stval">{hand[row.key]}</div>
+              <button className="stbtn" onClick={()=>adj(row.key,1,row.max)} disabled={hand[row.key]>=row.max||remaining<=0}>+</button>
+            </div>
+          </StRow>
+        ))}
+      </div>
+    ))}
+    <div className="egg-advice">
+      {advice?(<React.Fragment>
+        <div className="egg-advice-lbl">Oracle Recommends</div>
+        <div className="egg-bid">{advice.bid}</div>
+        <div className="egg-quote-inv">"{advice.text}"</div>
+      </React.Fragment>):(
+        <div className="egg-quote-inv">Enter your {round} card{round!==1?'s':''} above and the Oracle shall divine your fate…</div>
+      )}
+    </div>
+  </EggSheet>);
+}
+
+function RemingtonModal({room,myId,round,onClose}){
+  const[res,setRes]=useState(()=>remingtonAppraise(room,myId,round));
+  return(<EggSheet title="🏛️ Remington's Appraisal" sub={`Round ${round} field report — eyes only`} onClose={onClose}>
+    <div className="egg-persona">🧐</div>
+    {res.notes.map((n,i)=><div key={i} className="egg-quote">{n}</div>)}
+    <div className="egg-quote" style={{borderLeftColor:'var(--red)'}}>"{res.quip}" — Prof. Nigel Remington</div>
+    <button className="btn btn-outline" onClick={()=>setRes(remingtonAppraise(room,myId,round))}>Consult Again</button>
+  </EggSheet>);
+}
+
+function DeerModal({room,myId,round,onClose}){
+  const[res,setRes]=useState(()=>deerWisdom(room,myId,round));
+  return(<EggSheet title="🦌 Ask the Deer" sub="Groovy guidance from the man himself" onClose={onClose}>
+    <div className="egg-persona">🕶️</div>
+    <div className="egg-quote">{res.tip}</div>
+    <div className="egg-quote" style={{borderLeftColor:'var(--red)'}}>"{res.line}"</div>
+    <button className="btn btn-outline" onClick={()=>setRes(deerWisdom(room,myId,round))}>Ask Again</button>
+  </EggSheet>);
+}
+
+// ─────────────────────────────────────────────────────────
 // ROOM SHELL
 // ─────────────────────────────────────────────────────────
 function Room({room,myId,write,onLeave}){
@@ -808,11 +1026,20 @@ function Room({room,myId,write,onLeave}){
   const[round,setRound]=useState(1); // each player pages their own card freely
   const[showWin,setShowWin]=useState(false);
   const[confirmLeave,setConfirmLeave]=useState(false);
+  const[egg,setEgg]=useState(false);
+  const lastTap=useRef(0);
+  function titleTap(e){
+    const now=Date.now();
+    if(now-lastTap.current<320){e.preventDefault();setEgg(true)}
+    lastTap.current=now;
+  }
   const Pad=room.game==='sk'?SKPad:room.game==='aq'?AQPad:AMTPad;
   return(<div className={`pad ${g.theme}`} style={{position:'relative',flex:1,overflow:'hidden'}}>
     <div className="hdr">
       <img className="hdr-logo" src={ASSETS.logo} alt="Grandpa Beck's Games"/>
-      <div className="hdr-title">{g.title}<small>{playerList(room).find(p=>p.pid===myId)?.name||''} — my scorecard</small></div>
+      <div className="hdr-title" onTouchEnd={titleTap} onDoubleClick={e=>{e.preventDefault();setEgg(true)}}
+        style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none',touchAction:'manipulation'}}>
+        {g.title}<small>{playerList(room).find(p=>p.pid===myId)?.name||''} — my scorecard</small></div>
       <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
       <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>
     </div>
@@ -825,6 +1052,11 @@ function Room({room,myId,write,onLeave}){
       <button className="tab" onClick={()=>setShowWin(true)}><span className="tico">🎉</span>Finish</button>
     </div>
     {showWin&&<WinnerModal room={room} onClose={()=>setShowWin(false)} onNewGame={onLeave}/>}
+    {egg&&(room.game==='sk'
+      ?<OracleModal round={round} numPlayers={Math.max(2,playerList(room).length)} onClose={()=>setEgg(false)}/>
+      :room.game==='aq'
+        ?<RemingtonModal room={room} myId={myId} round={round} onClose={()=>setEgg(false)}/>
+        :<DeerModal room={room} myId={myId} round={round} onClose={()=>setEgg(false)}/>)}
     {confirmLeave&&<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmLeave(false)}>
       <div className="modal-sheet">
         <div className="modal-title">Leave this table?</div>

@@ -10,9 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Pinned versions + subresource integrity so a compromised CDN can't inject code.
+     (unpkg serves exact npm-package bytes, so these hashes are stable.) -->
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" integrity="sha384-tMH8h3BGESGckSAVGZ82T9n90ztNXxvdwvdM6UoR56cYcf+0iGXBliJ29D+wZ/x8" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" integrity="sha384-bm7MnzvK++ykSwVJ2tynSE5TRdN+xL418osEVF2DE/L/gfWHj91J2Sphe582B1Bh" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js" integrity="sha384-ezQ6HS3FLspd9te19o2McUV6FAK091+GG7KO54f/R8DKgCDi7fULhapNrd5LY+vG" crossorigin="anonymous"></script>
+<!-- Firebase is version-pinned; gstatic builds aren't byte-guaranteed against npm, so no SRI here. -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
@@ -199,7 +202,12 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 <script>
 window.onerror=function(msg,src,line,col,err){
   var d=document.getElementById('root');
-  if(d)d.innerHTML='<div style="background:#2a1005;color:#ffb199;padding:20px;font-family:monospace;font-size:13px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:9999"><b>JS ERROR (line '+line+')::</b>\n'+msg+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
+  if(!d)return false;
+  // textContent (never innerHTML) — error messages can contain untrusted data
+  var box=document.createElement('div');
+  box.style.cssText='background:#2a1005;color:#ffb199;padding:20px;font-family:monospace;font-size:13px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:9999';
+  box.textContent='JS ERROR (line '+line+'):\n'+msg+'\n\n'+(err&&err.stack?err.stack:'');
+  d.replaceChildren(box);
   return false;
 };
 </script>
@@ -234,6 +242,18 @@ const GAMES=[
 const gameById=id=>GAMES.find(g=>g.id===id)||GAMES[0];
 
 // ── Firebase (shared project with the Skull King scorer) ──
+// SECURITY NOTES
+// - The config below is public by design (all Firebase web apps ship it);
+//   protection comes from the Realtime Database RULES, not secrecy.
+// - Deploy rules that only expose games/$code (see index.html for the base
+//   set). Recommended tightening for this app's shape: cap string lengths
+//   (players/$id/name ≤ 20), require numbers for score fields, and reject
+//   writes to any other top-level path ("$other": read/write false).
+// - Anyone holding a 6-letter table code can read/write that table. That is
+//   the intended trust model (a shared family scorepad); codes are drawn
+//   from 32^6 ≈ 1B combinations so blind guessing is impractical.
+// - No emails/PII go to Firebase: newsletter signups stay on-device until
+//   wired to a real list provider.
 const FB_KEY='gb_firebase_config';let _db=null;
 const BUILT_IN={apiKey:"AIzaSyD38efOwDaQn9lGX_BMBEcuZDoZSeuCUz4",authDomain:"skull-king-score-tracker.firebaseapp.com",databaseURL:"https://skull-king-score-tracker-default-rtdb.firebaseio.com",projectId:"skull-king-score-tracker",storageBucket:"skull-king-score-tracker.firebasestorage.app",messagingSenderId:"269754888534",appId:"1:269754888534:web:2fcdee6d6043c0d3dfe6f7"};
 function loadFbCfg(){try{return JSON.parse(localStorage.getItem(FB_KEY))}catch{return null}}
@@ -820,8 +840,10 @@ function Room({room,myId,write,onLeave}){
 // APP
 // ─────────────────────────────────────────────────────────
 // apply a slash-path write to a plain object immutably (mirrors the Firebase write)
+const BAD_KEYS=new Set(['__proto__','constructor','prototype']);
 function applyPath(obj,path,val){
   const parts=path.split('/');
+  if(parts.some(p=>BAD_KEYS.has(p)))return obj; // prototype-pollution guard
   const clone={...obj};let cur=clone;
   for(let i=0;i<parts.length-1;i++){cur[parts[i]]={...(cur[parts[i]]||{})};cur=cur[parts[i]]}
   cur[parts[parts.length-1]]=val;

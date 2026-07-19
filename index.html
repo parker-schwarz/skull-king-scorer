@@ -78,12 +78,13 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .car-wrap{flex:1;overflow:hidden;position:relative}
 .car-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.22,.9,.3,1)}
 .car-slide{width:100%;flex-shrink:0;padding:14px 22px 8px;display:flex}
-.gcard{flex:1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(58,44,28,.25);border:3px solid rgba(255,255,255,.25)}
-.gcard-box{max-width:76%;max-height:52vh;object-fit:contain;filter:drop-shadow(0 16px 26px rgba(0,0,0,.5))}
+.gcard{flex:1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:24px 22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(58,44,28,.25);border:3px solid rgba(255,255,255,.25)}
+/* Box art fills the top region uniformly so the chips + button always land in the same place across every game */
+.gcard-box{flex:1 1 auto;min-height:0;max-width:80%;object-fit:contain;margin:0 auto;filter:drop-shadow(0 16px 26px rgba(0,0,0,.5))}
 .gcard-tag{font-size:13.5px;font-weight:700;opacity:.92;text-align:center;max-width:270px;line-height:1.45}
-.gcard-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;justify-content:center}
+.gcard-meta{display:flex;gap:8px;margin-top:0;flex-wrap:wrap;justify-content:center;min-height:24px;align-items:center}
 .chip{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:4px 11px}
-.gcard-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:280px;margin-top:14px}
+.gcard-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:280px;margin-top:4px}
 .gcard .btn-main{background:#fff;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .gcard .btn-outline{color:#fff;border-color:rgba(255,255,255,.55)}
 .car-dots{display:flex;justify-content:center;gap:8px;padding:12px 0 6px}
@@ -115,6 +116,9 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .seg-btn{flex:1;border:none;background:none;border-radius:9px;padding:9px 6px;font-family:var(--f-ui);font-weight:800;font-size:13.5px;color:var(--ink2);cursor:pointer}
 .seg-btn.on{background:var(--paper2);color:var(--accent);box-shadow:0 1px 5px rgba(58,44,28,.15)}
 .info-note{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--accent-soft);border-radius:var(--radius-sm);padding:11px 13px;line-height:1.5}
+/* "or" divider between Create Table and Join on the setup screen */
+.setup-or{display:flex;align-items:center;gap:12px;color:var(--ink3);font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin:2px 0}
+.setup-or::before,.setup-or::after{content:"";flex:1;height:1px;background:var(--line)}
 
 /* ── LOBBY ── */
 .code-disp{background:var(--teal);border-radius:var(--radius);padding:20px 16px;text-align:center;cursor:pointer;border:1px solid var(--gold)}
@@ -548,7 +552,7 @@ function Hub({onCreate,onJoin,fbReady}){
 // ─────────────────────────────────────────────────────────
 // SETUP
 // ─────────────────────────────────────────────────────────
-function Setup({gameId,onBack,onStart}){
+function Setup({gameId,onBack,onStart,onJoin}){
   const g=gameById(gameId);
   const[name,setName]=useState('');
   const[aqRounds,setAqRounds]=useState(3);
@@ -590,6 +594,8 @@ function Setup({gameId,onBack,onStart}){
       const opts=gameId==='aq'?{aqRounds,aqAdv}:gameId==='amt'?{amtMode}:{};
       onStart(gameId,name.trim(),opts);
     }}>{g.emoji} Create Table</button>
+    <div className="setup-or"><span>or</span></div>
+    <button className="btn btn-outline" onClick={onJoin}>🔑 Join a Table with a Code</button>
   </div>);
 }
 
@@ -1155,7 +1161,7 @@ function App(){
   }
   if(view==='room'&&!room)return<div className="scr" style={{alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--ink2)'}}>Setting the table…</div>;
   if(view==='join')return<Join onBack={()=>setView('hub')} onJoin={joinRoom}/>;
-  if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom}/>;
+  if(view.startsWith('setup:'))return<Setup gameId={view.slice(6)} onBack={()=>setView('hub')} onStart={createRoom} onJoin={()=>setView('join')}/>;
   return<Hub fbReady={fbReady} onCreate={id=>setView('setup:'+id)} onJoin={()=>setView('join')}/>;
 }
 

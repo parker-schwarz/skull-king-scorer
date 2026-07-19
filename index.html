@@ -179,6 +179,12 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .patt .pmark{margin-left:auto;font-size:15px}
 .warn{font-size:12px;font-weight:700;color:var(--red);padding:4px 2px}
 .okline{font-size:12px;font-weight:700;color:var(--green);padding:4px 2px}
+/* Skull King bid-lock: hint under the Lock button, and the locked-bid banner shown in phase 2 */
+.bid-hint{font-size:11.5px;font-weight:600;color:var(--ink2);text-align:center;margin-top:8px}
+.bid-locked{display:flex;align-items:center;gap:10px;margin:2px 0 4px;padding:9px 12px;background:var(--teal);color:#fff;border-radius:12px}
+.bid-locked-lbl{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.bid-locked-val{font-size:22px;font-weight:900;line-height:1;margin-left:auto}
+.bid-edit{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;font-family:var(--f-ui);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;cursor:pointer}
 .pad-foot{position:absolute;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--paper) 30%);display:flex;gap:9px}
 .tabbar{display:flex;border-top:2px solid var(--line);background:var(--paper2);flex-shrink:0}
 .tab{flex:1;border:none;background:none;padding:10px 4px calc(9px + env(safe-area-inset-bottom));font-family:var(--f-ui);font-weight:800;font-size:12px;color:var(--ink2);cursor:pointer}
@@ -202,6 +208,15 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .modal-sheet{background:var(--paper2);border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));width:100%;max-height:82%;overflow-y:auto;display:flex;flex-direction:column;gap:13px}
 .modal-title{font-family:var(--f-title);font-weight:700;font-size:21px}
 .modal-body{font-size:14px;font-weight:600;color:var(--ink2);line-height:1.55}
+/* Rules & FAQ help sheet */
+.help-p{font-size:13.5px;font-weight:600;color:var(--ink2);line-height:1.55}
+.help-sec-t{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:8px 0 -2px}
+.help-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:700;color:var(--ink);border-top:1.5px dashed var(--line);padding:6px 0}
+.help-row b{font-weight:800;color:var(--teal);white-space:nowrap}
+.help-note{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--paper3);border-radius:12px;padding:10px 12px;line-height:1.5}
+.help-q{font-size:13.5px;font-weight:800;color:var(--ink);margin-top:6px}
+.help-a{font-size:13px;font-weight:600;color:var(--ink2);line-height:1.5}
+.help-link{display:inline-block;font-weight:800;color:var(--red);text-decoration:none;font-size:13.5px;margin-top:2px}
 .win-banner{text-align:center;padding:10px 0}
 .win-em{font-size:60px}
 .win-name{font-family:var(--f-title);font-weight:700;font-size:30px;color:var(--accent)}
@@ -685,7 +700,7 @@ function SKPad({room,write,myId,round,setRound}){
     <div className="round-bar">
       {range(10).map(i=>{
         const r=i+1;
-        const done=players.every(p=>cell(room,'sk',r,p.pid).bid!=null);
+        const done=players.every(p=>cell(room,'sk',r,p.pid).bidLocked);
         return<button key={r} className={`round-pill${r===round?' on':done?' done':''}`} onClick={()=>setRound(r)}>R{r}</button>;
       })}
     </div>
@@ -694,16 +709,29 @@ function SKPad({room,write,myId,round,setRound}){
         const c=cell(room,'sk',round,p.pid);
         const pts=skRoundPts(c,round);
         const bonus=skBonusTotal(c.bonus);
+        const locked=!!c.bidLocked;
         return(<div key={p.pid} className="pcard">
           <div className="pcard-head">
             <div className="pcard-name">{crown(p.name)}{p.name}</div>
             <div className="pcard-pts">{pts==null?'—':pts>0?`+${pts}`:pts}<small>total {skTotal(room,p.pid)}</small></div>
           </div>
-          <StRow label="Bid"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
-          <StRow label="Tricks won"><Stepper val={c.tricks} set={v=>upd(p.pid,{tricks:v})} max={round}/></StRow>
-          <StRow label="Bonus points" sub={bonus>0?`+${bonus} pts${skBidOK(c.bid||0,c.tricks||0)?'':' (needs exact bid!)'}`:'14s, captures & alliances'}>
-            <button className="btn btn-ghost btn-sm" onClick={()=>setBonusFor(p.pid)}>{bonus>0?`+${bonus} ✎`:'+ Add'}</button>
-          </StRow>
+          {!locked?<React.Fragment>
+            {/* Phase 1 — bid only, then lock it in before the round is played */}
+            <StRow label="Your bid" sub="How many tricks will ye take?"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
+            <button className="btn btn-main" disabled={c.bid==null} onClick={()=>upd(p.pid,{bid:c.bid||0,bidLocked:true})}>🔒 Lock In Bid</button>
+            <div className="bid-hint">Lock yer bid before the round — tricks &amp; bonus come after.</div>
+          </React.Fragment>:<React.Fragment>
+            {/* Phase 2 — bid is locked; enter what actually happened */}
+            <div className="bid-locked">
+              <span className="bid-locked-lbl">🔒 Bid locked</span>
+              <span className="bid-locked-val">{c.bid}</span>
+              <button className="bid-edit" onClick={()=>upd(p.pid,{bidLocked:false})}>Edit</button>
+            </div>
+            <StRow label="Tricks won"><Stepper val={c.tricks} set={v=>upd(p.pid,{tricks:v})} max={round}/></StRow>
+            <StRow label="Bonus points" sub={bonus>0?`+${bonus} pts${skBidOK(c.bid||0,c.tricks||0)?'':' (needs exact bid!)'}`:'14s, captures & alliances'}>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setBonusFor(p.pid)}>{bonus>0?`+${bonus} ✎`:'+ Add'}</button>
+            </StRow>
+          </React.Fragment>}
         </div>);
       })}
       {allEntered&&trickSum!==round&&<div className="warn">⚠️ Tricks add up to {trickSum}, but {round} were played this round.</div>}
@@ -1026,12 +1054,72 @@ function DeerModal({room,myId,round,onClose}){
 // ─────────────────────────────────────────────────────────
 // ROOM SHELL
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// RULES & FAQ  (per game, opened from the ? in the header)
+// ─────────────────────────────────────────────────────────
+const HELP_COMMON=[
+  {q:'How does everyone join?',a:'The host taps Start Scoring → Create Table and shares the 6-letter code. Everyone else opens the app, taps Start Scoring → Join a Table with a Code, and enters it. Each player keeps their own scorecard and the standings update live.'},
+  {q:'Can I fix an earlier round?',a:'Yes — tap any round pill along the top to jump back and edit it. Totals recalculate automatically.'},
+  {q:'How do we see who won?',a:'Tap Standings in the bottom bar for the live scoreboard, or Finish for the winner screen.'},
+  {q:'Do we need internet?',a:'Live multiplayer sync needs a connection. On your own, it still works offline as a solo scorepad.'},
+];
+const HELP={
+  sk:{title:'☠️ Skull King — Rules & FAQ',
+    intro:'10 rounds. Round 1 deals 1 card, round 10 deals 10. Each round you bid how many tricks you\'ll take, lock it in, then play the round.',
+    scoreTitle:'How scoring works',
+    scoring:[['Bid 1+ and exact','+20 × tricks'],['Bid 1+ and off','−10 × tricks over/under'],['Bid 0 and make it','+10 × round #'],['Bid 0 and miss','−10 × round #']],
+    bonusTitle:'Bonus points (only if you hit your bid exactly)',
+    bonuses:[['14 of Yellow / Purple / Green','+10 each'],['14 of Black (Jolly Roger)','+20'],['Mermaid captures a Pirate','+20'],['Pirate captured by Skull King','+30'],['Mermaid captures Skull King','+40'],['Loot alliance honored','+20']],
+    note:'Card rank: Escape < Colored suits < Black trump < Pirates < Skull King < Mermaids. Mermaids beat the Skull King but lose to Pirates — first card played wins ties.',
+    winner:'Highest score after 10 rounds wins.',
+    faq:[{q:'Why lock in the bid?',a:'It commits your bid before cards are played, so no one can nudge it after seeing how the round went. Made a genuine mistake? Tap Edit on the locked bid.'}],
+    link:{label:'▶ Learn more at GrandpaBecksGames.com',href:'https://www.grandpabecksgames.com'}},
+  aq:{title:'🏺 Antiquity Quest — Rules & FAQ',
+    intro:'Collect, combine, and complete card collections over 1–3 rounds. Highest score wins.',
+    scoreTitle:'Collections',
+    scoring:[['Mixed Collection','250'],['Standard Antiquity','500'],['Standard Treasure','750'],['Perfect Antiquity','1000'],['Perfect Treasure','1500']],
+    note:'Explorer bonus: the first player to go out earns +500 if they hold at least one Mixed, one Standard, and one Perfect collection. If they don\'t qualify, it passes to the next player who does — so toggle "Went out first" on the right person. Advanced rules add the On Assignment civilization bonus.',
+    winner:'Highest total after the final round wins.',
+    faq:[{q:'How do leftover cards score?',a:'Played cards add points; cards stuck in your hand or cache subtract (−25 an Antiquity, −50 a Treasure, −100 a character). The pad handles the math as you enter them.'}],
+    link:{label:'▶ Watch Grandpa\'s how-to-play video',href:'https://www.gbecks.com/aq-vid'}},
+  amt:{title:"🦌 Another Man's Treasure — Rules & FAQ",
+    intro:'Pack away Paul & Mona\'s treasures — take home as FEW as you can. LOWEST score wins. Classic is 5 rounds; Progressive is 9 (three 6-card, three 8-card, three 10-card tiers).',
+    scoreTitle:'Leftover cards add points (low is good)',
+    scoring:[['Treasure card left','+5 each'],['Wild 1–6 / 6–11 left','+10 each'],['Wild 1–11 left','+15 each'],['☺ Smiley played (Progressive)','−10 each'],['☺ Smiley stuck in hand','+10 each']],
+    note:'Each round you may play one collection pattern, and each pattern can be used only once per game — greyed patterns show the round you already used them.',
+    winner:'Lowest total wins; ties broken by patterns completed.',
+    faq:[{q:'Wait, the LOW score wins?',a:'Yes! You\'re trying to offload treasures, not hoard them. Every card you\'re stuck with at the end adds points, so fewer is better.'}],
+    link:{label:'▶ Watch Grandpa\'s how-to-play video',href:'https://www.gbecks.com/amt-vid'}},
+};
+function HelpModal({game,onClose}){
+  const h=HELP[game]||HELP.sk;
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="modal-title">{h.title}</div>
+      <div className="help-p">{h.intro}</div>
+      <div className="help-sec-t">{h.scoreTitle}</div>
+      {h.scoring.map(([l,v])=><div key={l} className="help-row"><span>{l}</span><b>{v}</b></div>)}
+      {h.bonuses&&<React.Fragment>
+        <div className="help-sec-t">{h.bonusTitle}</div>
+        {h.bonuses.map(([l,v])=><div key={l} className="help-row"><span>{l}</span><b>{v}</b></div>)}
+      </React.Fragment>}
+      {h.note&&<div className="help-note">{h.note}</div>}
+      <div className="help-note" style={{background:'var(--accent-soft)'}}>🏆 {h.winner}</div>
+      <div className="help-sec-t">Frequently asked</div>
+      {[...h.faq,...HELP_COMMON].map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
+      {h.link&&<a className="help-link" href={h.link.href} target="_blank" rel="noopener">{h.link.label}</a>}
+      <button className="btn btn-main" onClick={onClose}>Got it ⚓</button>
+    </div>
+  </div>);
+}
+
 function Room({room,myId,write,onLeave}){
   const g=gameById(room.game);
   const[tab,setTab]=useState('score');
   const[round,setRound]=useState(1); // each player pages their own card freely
   const[showWin,setShowWin]=useState(false);
   const[confirmLeave,setConfirmLeave]=useState(false);
+  const[showHelp,setShowHelp]=useState(false);
   const[egg,setEgg]=useState(false);
   const lastTap=useRef(0);
   function titleTap(e){
@@ -1047,6 +1135,7 @@ function Room({room,myId,write,onLeave}){
         style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none',touchAction:'manipulation'}}>
         {g.title}<small>{playerList(room).find(p=>p.pid===myId)?.name||''} — my scorecard</small></div>
       <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
+      <button className="icon-btn" title="Rules & FAQ" onClick={()=>setShowHelp(true)}>❓</button>
       <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>
     </div>
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
@@ -1058,6 +1147,7 @@ function Room({room,myId,write,onLeave}){
       <button className="tab" onClick={()=>setShowWin(true)}><span className="tico">🎉</span>Finish</button>
     </div>
     {showWin&&<WinnerModal room={room} onClose={()=>setShowWin(false)} onNewGame={onLeave}/>}
+    {showHelp&&<HelpModal game={room.game} onClose={()=>setShowHelp(false)}/>}
     {egg&&(room.game==='sk'
       ?<OracleModal round={round} numPlayers={Math.max(2,playerList(room).length)} onClose={()=>setEgg(false)}/>
       :room.game==='aq'

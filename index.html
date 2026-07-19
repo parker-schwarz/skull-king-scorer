@@ -776,7 +776,7 @@ function SKPad({room,write,myId,round,setRound}){
           {!locked?<React.Fragment>
             {/* Phase 1 — bid only, then lock it in before the round is played */}
             <StRow label="Your bid" sub="How many tricks will ye take?"><Stepper val={c.bid} set={v=>upd(p.pid,{bid:v})} max={round}/></StRow>
-            <button className="btn btn-main" disabled={c.bid==null} onClick={()=>upd(p.pid,{bid:c.bid||0,bidLocked:true})}>🔒 Lock In Bid</button>
+            <button className="btn btn-main" onClick={()=>upd(p.pid,{bid:c.bid||0,bidLocked:true})}>🔒 Lock In Bid</button>
             <div className="bid-hint">Lock yer bid before the round — tricks &amp; bonus come after.</div>
           </React.Fragment>:<React.Fragment>
             {/* Phase 2 — bid is locked; enter what actually happened */}

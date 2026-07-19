@@ -185,6 +185,10 @@ html,body{height:100%;background:var(--paper);overflow:hidden;-webkit-tap-highli
 .bid-locked-lbl{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
 .bid-locked-val{font-size:22px;font-weight:900;line-height:1;margin-left:auto}
 .bid-edit{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;font-family:var(--f-ui);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;cursor:pointer}
+/* One-tap round paging */
+.round-nav{display:flex;align-items:center;gap:10px;margin-top:16px}
+.round-nav .btn-next{flex:1}
+.round-nav-end{flex:1;text-align:center;font-size:12.5px;font-weight:700;color:var(--ink2)}
 .pad-foot{position:absolute;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--paper) 30%);display:flex;gap:9px}
 .tabbar{display:flex;border-top:2px solid var(--line);background:var(--paper2);flex-shrink:0}
 .tab{flex:1;border:none;background:none;padding:10px 4px calc(9px + env(safe-area-inset-bottom));font-family:var(--f-ui);font-weight:800;font-size:12px;color:var(--ink2);cursor:pointer}
@@ -508,6 +512,15 @@ function StRow({label,sub,children}){
     {children}
   </div>);
 }
+// One-tap round paging, shared by every pad
+function RoundNav({round,total,setRound}){
+  return(<div className="round-nav">
+    <button className="btn btn-ghost btn-sm" disabled={round<=1} onClick={()=>setRound(round-1)}>← Prev</button>
+    {round<total
+      ? <button className="btn btn-main btn-next" onClick={()=>setRound(round+1)}>Next Round →</button>
+      : <span className="round-nav-end">Final round · tap 🎉 Finish for results</span>}
+  </div>);
+}
 
 // ─────────────────────────────────────────────────────────
 // HUB
@@ -736,6 +749,7 @@ function SKPad({room,write,myId,round,setRound}){
       })}
       {allEntered&&trickSum!==round&&<div className="warn">⚠️ Tricks add up to {trickSum}, but {round} were played this round.</div>}
       {allEntered&&trickSum===round&&<div className="okline">✓ Round {round} accounts for all {round} trick{round>1?'s':''}.</div>}
+      <RoundNav round={round} total={10} setRound={setRound}/>
     </div>
     {bonusFor&&<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setBonusFor(null)}>
       <div className="modal-sheet">
@@ -807,6 +821,7 @@ function AQPad({room,write,myId,round,setRound}){
           </StRow>}
         </div>);
       })}
+      <RoundNav round={round} total={nRounds} setRound={setRound}/>
     </div>
   </React.Fragment>);
 }
@@ -864,6 +879,7 @@ function AMTPad({room,write,myId,round,setRound}){
           {prog&&<StRow label="☺ Smileys stuck in hand" sub="+10 each"><Stepper val={c.smileHand} set={v=>upd(p.pid,{smileHand:v})} neg max={12}/></StRow>}
         </div>);
       })}
+      <RoundNav round={round} total={nRounds} setRound={setRound}/>
     </div>
   </React.Fragment>);
 }

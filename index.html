@@ -519,8 +519,10 @@ const crown=n=>isGrandpa(n)?'🎩 ':'';
 // ── Shared bits ──
 function Toggle({on,onToggle}){return<div className={`tog ${on?'on':''}`} onClick={onToggle}/>}
 function Stepper({val,set,min=0,max=99,neg}){
+  // − is live while the value is still blank so tapping it registers the shown 0 in one tap
+  // (no +1/−1 dance); once an actual number is set it disables at the floor as usual.
   return(<div className="stctr">
-    <button className="stbtn" onClick={()=>set(Math.max(min,(val||0)-1))} disabled={(val||0)<=min}>−</button>
+    <button className="stbtn" onClick={()=>set(Math.max(min,(val||0)-1))} disabled={val!=null&&val<=min}>−</button>
     <div className={`stval${neg&&(val||0)>0?' neg':''}`}>{val||0}</div>
     <button className="stbtn" onClick={()=>set(Math.min(max,(val||0)+1))} disabled={(val||0)>=max}>+</button>
   </div>);
@@ -1137,7 +1139,7 @@ const HELP_COMMON=[
   {q:'Does it cost anything?',a:'Nope — it\'s a free companion to your Grandpa Beck\'s games.'},
 ];
 const HELP={
-  sk:{title:'☠️ Skull King — Rules & FAQ',
+  sk:{title:'☠️ Skull King — Rulebook',
     intro:'10 rounds. Round 1 deals 1 card, round 10 deals 10. Each round you bid how many tricks you\'ll take, lock it in, then play the round.',
     scoreTitle:'How scoring works',
     scoring:[['Bid 1+ and exact','+20 × tricks'],['Bid 1+ and off','−10 × tricks over/under'],['Bid 0 and make it','+10 × round #'],['Bid 0 and miss','−10 × round #']],
@@ -1147,7 +1149,7 @@ const HELP={
     winner:'Highest score after 10 rounds wins.',
     faq:[{q:'Why lock in the bid?',a:'It commits your bid before cards are played, so no one can nudge it after seeing how the round went. Made a genuine mistake? Tap Edit on the locked bid.'}],
     link:{label:'▶ Learn more at GrandpaBecksGames.com',href:'https://www.grandpabecksgames.com'}},
-  aq:{title:'🏺 Antiquity Quest — Rules & FAQ',
+  aq:{title:'🏺 Antiquity Quest — Rulebook',
     intro:'Collect, combine, and complete card collections over 1–3 rounds. Highest score wins.',
     scoreTitle:'Collections',
     scoring:[['Mixed Collection','250'],['Standard Antiquity','500'],['Standard Treasure','750'],['Perfect Antiquity','1000'],['Perfect Treasure','1500']],
@@ -1164,7 +1166,8 @@ const HELP={
     faq:[{q:'Wait, the LOW score wins?',a:'Yes! You\'re trying to offload treasures, not hoard them. Every card you\'re stuck with at the end adds points, so fewer is better.'}],
     link:{label:'▶ Watch Grandpa\'s how-to-play video',href:'https://www.gbecks.com/amt-vid'}},
 };
-function HelpModal({game,onClose}){
+// 📖 Rulebook — how to play THIS game (rules, scoring, gameplay clarifications)
+function RulesModal({game,onClose}){
   const h=HELP[game]||HELP.sk;
   return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
     <div className="modal-sheet">
@@ -1182,10 +1185,19 @@ function HelpModal({game,onClose}){
         <div className="help-sec-t">Good to know</div>
         {h.faq.map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
       </React.Fragment>}
-      <div className="help-sec-t">Using this scorepad</div>
-      {HELP_COMMON.map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
       {h.link&&<a className="help-link" href={h.link.href} target="_blank" rel="noopener">{h.link.label}</a>}
       <button className="btn btn-main" onClick={onClose}>Got it ⚓</button>
+    </div>
+  </div>);
+}
+// ❓ App help — questions about the scorepad itself
+function AppHelpModal({onClose}){
+  return(<div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal-sheet">
+      <div className="modal-title">❓ Using the Scorepad</div>
+      <div className="help-p">Questions about the app itself — joining a table, saving your game, and scoring on one phone. For how to play, tap the 📖 rulebook.</div>
+      {HELP_COMMON.map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
+      <button className="btn btn-main" onClick={onClose}>Got it</button>
     </div>
   </div>);
 }
@@ -1197,6 +1209,7 @@ function Room({room,myId,write,onLeave}){
   const[showWin,setShowWin]=useState(false);
   const[confirmLeave,setConfirmLeave]=useState(false);
   const[showHelp,setShowHelp]=useState(false);
+  const[showRules,setShowRules]=useState(false);
   const[egg,setEgg]=useState(false);
   const lastTap=useRef(0);
   function titleTap(e){
@@ -1212,7 +1225,8 @@ function Room({room,myId,write,onLeave}){
         style={{cursor:'default',userSelect:'none',WebkitUserSelect:'none',touchAction:'manipulation'}}>
         {g.title}<small>{(()=>{const mine=myPlayers(room,myId);const meName=mine.find(p=>p.pid===myId)?.name||'';return mine.length>1?`scoring ${mine.length} cards`:`${meName} — my scorecard`;})()}</small></div>
       <span className="hdr-code" onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(room.code).catch(()=>{})}>{room.code}</span>
-      <button className="icon-btn" title="Rules & FAQ" onClick={()=>setShowHelp(true)}>❓</button>
+      <button className="icon-btn" title="Rulebook — how to play" onClick={()=>setShowRules(true)}>📖</button>
+      <button className="icon-btn" title="Using the scorepad" onClick={()=>setShowHelp(true)}>❓</button>
       <button className="icon-btn" onClick={()=>setConfirmLeave(true)}>🚪</button>
     </div>
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
@@ -1224,7 +1238,8 @@ function Room({room,myId,write,onLeave}){
       <button className="tab" onClick={()=>setShowWin(true)}><span className="tico">🎉</span>Finish</button>
     </div>
     {showWin&&<WinnerModal room={room} onClose={()=>setShowWin(false)} onNewGame={onLeave}/>}
-    {showHelp&&<HelpModal game={room.game} onClose={()=>setShowHelp(false)}/>}
+    {showRules&&<RulesModal game={room.game} onClose={()=>setShowRules(false)}/>}
+    {showHelp&&<AppHelpModal onClose={()=>setShowHelp(false)}/>}
     {egg&&(room.game==='sk'
       ?<OracleModal round={round} numPlayers={Math.max(2,playerList(room).length)} onClose={()=>setEgg(false)}/>
       :room.game==='aq'

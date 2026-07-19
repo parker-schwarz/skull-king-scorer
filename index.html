@@ -1073,11 +1073,18 @@ function DeerModal({room,myId,round,onClose}){
 // ─────────────────────────────────────────────────────────
 // RULES & FAQ  (per game, opened from the ? in the header)
 // ─────────────────────────────────────────────────────────
+// FAQ about the scorepad app itself (shown on every game's help sheet)
 const HELP_COMMON=[
-  {q:'How does everyone join?',a:'The host taps Start Scoring → Create Table and shares the 6-letter code. Everyone else opens the app, taps Start Scoring → Join a Table with a Code, and enters it. Each player keeps their own scorecard and the standings update live.'},
-  {q:'Can I fix an earlier round?',a:'Yes — tap any round pill along the top to jump back and edit it. Totals recalculate automatically.'},
-  {q:'How do we see who won?',a:'Tap Standings in the bottom bar for the live scoreboard, or Finish for the winner screen.'},
-  {q:'Do we need internet?',a:'Live multiplayer sync needs a connection. On your own, it still works offline as a solo scorepad.'},
+  {q:'Do we each need our own phone?',a:'That\'s the idea. The host taps Start Scoring → Create Table and shares the 6-letter code. Everyone else opens the app, taps Start Scoring → Join a Table with a Code, and enters it. Each player keeps their own scorecard on their own phone, and the standings update live for everyone.'},
+  {q:'Where do I find the table code?',a:'Top of the scorepad, next to the ? — tap it to copy. It\'s also on the lobby screen. Anyone can join with it at any time, even after the game has started.'},
+  {q:'Do I have to download or install anything?',a:'No — it runs right in your phone\'s browser. No app store, no account. Want one-tap access next time? Use your browser\'s "Add to Home Screen" and it opens just like an app.'},
+  {q:'If I close the tab or lock my phone, do I lose the game?',a:'No. Your table is saved automatically — reopen the app and you drop right back into it. Nothing is lost.'},
+  {q:'Can I fix a mistake in an earlier round?',a:'Yes. Tap any round pill along the top (or the Prev button) to jump back and edit it — totals recalculate instantly. In Skull King, tap Edit on a locked bid to correct it.'},
+  {q:'Can two people enter scores at the same time?',a:'Absolutely. Everyone scores their own card at once and nobody overwrites anyone else.'},
+  {q:'How do we see the winner and full scoreboard?',a:'Tap Standings in the bottom bar for the live scoreboard, or Finish for the winner screen.'},
+  {q:'How do we start a new game?',a:'From the Finish screen tap New Game, or tap the 🚪 door to leave the table — then Start Scoring sets up a fresh one.'},
+  {q:'Does it need internet?',a:'Live multiplayer sync needs a connection. On your own, it still works offline as a personal scorepad.'},
+  {q:'Does it cost anything?',a:'Nope — it\'s a free companion to your Grandpa Beck\'s games.'},
 ];
 const HELP={
   sk:{title:'☠️ Skull King — Rules & FAQ',
@@ -1121,8 +1128,12 @@ function HelpModal({game,onClose}){
       </React.Fragment>}
       {h.note&&<div className="help-note">{h.note}</div>}
       <div className="help-note" style={{background:'var(--accent-soft)'}}>🏆 {h.winner}</div>
-      <div className="help-sec-t">Frequently asked</div>
-      {[...h.faq,...HELP_COMMON].map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
+      {h.faq&&h.faq.length>0&&<React.Fragment>
+        <div className="help-sec-t">Good to know</div>
+        {h.faq.map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
+      </React.Fragment>}
+      <div className="help-sec-t">Using this scorepad</div>
+      {HELP_COMMON.map(f=><div key={f.q}><div className="help-q">{f.q}</div><div className="help-a">{f.a}</div></div>)}
       {h.link&&<a className="help-link" href={h.link.href} target="_blank" rel="noopener">{h.link.label}</a>}
       <button className="btn btn-main" onClick={onClose}>Got it ⚓</button>
     </div>

@@ -187,16 +187,30 @@ star-review counts) over technical claims.
 - Red "SHOP GAMES" CTAs repeated every 2–3 scroll sections — conversion
   paths stay present without feeling pushy
 
+## The scorepads page — direct pitch evidence
+
+`https://www.grandpabecksgames.com/pages/scorepads` — Parker's identified
+this as the strongest evidence for the pitch: it's a page of literal
+paper score sheets, one per game, for players to print or order more of
+when they run out. This is the exact gap the app fills.
+
+Pending: full page content (what's listed, PDF vs. printable vs.
+physical, pricing, layout) — can't be fetched directly from this
+environment (network policy blocks the domain). Paste in page content or
+a screenshot to fill this in.
+
 ## Open follow-ups
 
 - [x] Six screenshots reviewed (hero, trust badges, product grid, feature
-      block, Instagram strip, footer) — details captured above; actual
-      image files not committed (arrived as chat images, not files)
+      block, Instagram strip, footer) — details captured above. Decision:
+      not committing the actual image files to the repo; the written
+      detail is what's actually useful for building/comparing against
 - [ ] Grab the "Play Together, Stay Together" dark-teal testimonial
       section specifically — described in the original analysis but never
-      actually screenshotted
-- [ ] Check the site's existing `/Scorepads` footer link — may be the
-      natural place this app eventually gets linked from
+      actually screenshotted (low priority, not blocking)
+- [ ] Document `/pages/scorepads` (see new section below) — this is the
+      direct evidence for the pitch angle (paper score pads → this app),
+      worth fully capturing once Parker can share the page content
 - [ ] Side-by-side check of app teal/cream hex values against the site
 - [ ] Consider checking a subpage (product page template, blog) for
       additional style notes

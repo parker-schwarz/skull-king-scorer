@@ -1,8 +1,11 @@
 # Progress — Grandpa Beck's Scorepad
 
 Living status doc. Update this as things change; don't let it go stale.
-Pairs with `PITCH.md` (the sales narrative) — this file is the honest
-internal read on where things actually stand.
+Pairs with `PITCH.md` (internal pitch reasoning), `PITCH_LETTER.md`
+(the send-ready version addressed to Grandpa Beck's team), and
+`BRAND_STYLE_GUIDE.md` (their site's palette/type/voice, for keeping
+anything client-facing on-brand) — this file is the honest internal read
+on where things actually stand.
 
 Last updated: 2026-07-25
 
@@ -31,6 +34,31 @@ server to run, no hosting bill — free tier covers this comfortably.
   guards, no secrets in the code
 
 See `PITCH.md` for the full sell. See commit history for the build order.
+
+## Pitch materials — now genuinely send-ready
+
+- `BRAND_STYLE_GUIDE.md` — Grandpa Beck's actual site palette, type
+  (Figtree), layout rhythm, voice, and confirmed page structure
+  (including `/pages/scorepads`, their existing printable-PDF score
+  sheets — direct evidence for the pitch). Sourced from a live site
+  analysis plus screenshots, cross-checked against `index.html`'s CSS
+  (already close to on-brand; one unused Fraunces font import flagged
+  for cleanup).
+- **Sharper pitch angle**, now the lead in both pitch docs: the real
+  problem paper score sheets create isn't missing math, it's that one
+  person has to be the scorekeeper. The app's headline value is
+  distributed self-scoring + instant "who's winning" standings;
+  automated math and the marketing touchpoint are supporting points.
+- `PITCH_LETTER.md` — a second, client-facing version of the pitch,
+  separate from `PITCH.md`. Addressed directly to Grandpa Beck's team in
+  second person, discloses up front that this is an unaffiliated
+  customer proposal, leads with a "try the live demo" link, and closes
+  with contact info instead of internal next-step notes. `PITCH.md`
+  stays the internal-reasoning version — open questions, personal notes,
+  "if he bites" framing — and should never be the one actually sent.
+- Both pitch docs have styled HTML previews (Claude Artifacts, private
+  until shared) matching Grandpa Beck's brand palette for an easy
+  read-through before sending anything for real.
 
 ## What's NOT done / not true yet
 
@@ -71,18 +99,24 @@ Options to raise with Grandpa Beck's team rather than resolve solo:
 
 ## Path to pitch-ready
 
+- [x] Write the actual pitch materials (`PITCH.md`, `PITCH_LETTER.md`,
+      `BRAND_STYLE_GUIDE.md`) — done and on-brand
 - [ ] Run a full real game night on it (this is the next concrete step)
 - [ ] Fix whatever the real game night surfaces
 - [ ] Decide + write down the maintenance-ownership answer above before
       the pitch conversation, even if the answer is "let's figure it out
       together"
 - [ ] (Optional, not blocking) Wire newsletter capture to a real ESP if
-      there's time — otherwise pitch it as "one-day change" per `PITCH.md`
-- [ ] Schedule time with Grandpa Beck
+      there's time — otherwise pitch it as "one-day change" per
+      `PITCH_LETTER.md`
+- [ ] Final read-through of `PITCH_LETTER.md` before sending — check tone,
+      length, and the "not affiliated" disclosure line
+- [ ] Schedule time with Grandpa Beck / send `PITCH_LETTER.md`
 
 ## Bottom line
 
-The app itself is in good shape — feature work is essentially done. The
-gap between now and pitching isn't more building, it's (1) proving it
+The app itself is in good shape — feature work is essentially done, and
+the pitch materials are now genuinely send-ready. The gap between now and
+pitching isn't more building or writing, it's (1) proving the app
 survives a real game night and (2) walking in with a straight answer on
 who owns this thing after the demo lands well.

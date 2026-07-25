@@ -5,14 +5,23 @@ grandpabecksgames.com so we stop re-deriving this every session. Update in
 place if the site changes or a new subpage gets analyzed.
 
 Last updated: 2026-07-25 (source: Claude Browser analysis of the homepage,
-pasted in by Parker)
+pasted in by Parker, cross-checked against six live screenshots)
 
 ## Screenshots
 
-Pending — six to be added: hero section, trust-badge strip, product grid,
-"durable and delightful" feature block, "Play Together, Stay Together"
-section, footer. Drop them in `/screenshots/brand/` and link here once
-available.
+Six reviewed directly (hero, trust-badge strip, product grid, "Durable &
+delightful" feature block, Instagram feed strip, footer) — details folded
+into the sections below. They arrived as inline chat images, not files, so
+the actual PNGs aren't committed to the repo. If we want them in
+`/screenshots/brand/` for later reference, they need to be dropped in as
+real files (drag into the project folder, or a download link) rather than
+pasted into chat.
+
+Note: the analysis text described a fifth "Play Together, Stay Together"
+dark-teal testimonial section, but the fifth screenshot actually delivered
+was the Instagram feed strip (`#GRANDPABECKSGAMES` grid) instead. The
+testimonial section itself hasn't been screenshotted yet — worth grabbing
+if it comes up again.
 
 ## Brand personality
 
@@ -85,6 +94,70 @@ Standard, well-executed DTC pattern, top to bottom:
 9. Instagram feed strip
 10. Dark-teal footer — three link columns, payment-method icons
 
+## Confirmed from screenshots — exact copy & structure
+
+**Announcement bar:** "Free Shipping over $50" — white text on brick red.
+
+**Nav:** logo left (bowler-hat mark + "GRANDPA BECK'S GAMES" wordmark,
+black on white) — How-to-Play, Retailers, Printables, Gear — red "SHOP
+GAMES" button, cart icon, account icon, right-aligned.
+
+**Hero:** full-bleed family photo. Headline "Deal a Handful of Fun" (white,
+bold, large). Subhead "We make great games so you can make great
+memories." Single red "SHOP GAMES" CTA, centered.
+
+**Trust-badge strip** (cream bg, gold corner scrollwork, thin gold rule
+below), three columns, each an illustrated icon + italic teal headline +
+red all-caps micro-label:
+- Ribbon icon — "Over three million games sold" / "OUR #1 BEST SELLER"
+- Stars icon — "Tens of thousands of 5-star reviews" / "WHAT PEOPLE ARE
+  SAYING"
+- Cards icon — "A new experience with every shuffle" / "THE GRANDPA
+  BECK'S DIFFERENCE"
+
+**Product grid section:** headline "Game time is time well spent",
+subhead "We make games that bring pure enjoyment to everyone." Cards
+observed: The Ticket Booth ($19.99), Cover Your Assets® ("Addictive game
+of give and take. Loved by all ages!", $19.99), Skull King® ("The
+Ultimate Pirate Trick Taking Game", $19.99), plus Whoa There Cowboy and
+3-2-1 Countdown partially visible below the fold.
+
+**"Durable & delightful" feature block:** bold teal headline, two short
+body paragraphs ("Say hello to attractive designs, durable cards, and
+sturdy boxes." / "We use premium materials to make our games sturdy for
+lots of shuffling and travel bumps. Plus, our detailed artwork will
+delight players of all ages."), red "SHOP GAMES" button, image of
+scattered Skull King cards opposite the text, thin gold rules above and
+below.
+
+**Instagram feed strip:** tiled grid of mixed content — product lifestyle
+shots, in-app-style card graphics, a travel/event photo ("Come with us to
+Origins!"), tagged `#grandpabecksgames` implicitly via the footer social
+handle.
+
+**Footer** (dark teal-navy bg, gold link text): three columns —
+- MENU: Retailers, Blog, Games, FAQ, Contact, Customer Service, Media
+  Room, Affiliate Program
+- RULES AND THINGS: Scorepads, Coloring Pages, JK Studios
+- #GRANDPABECKSGAMES: Facebook, Twitter, Pinterest, Instagram, YouTube
+
+Below that: copyright line, "Powered by Shopify," a row of payment-method
+icons (Amex, Apple Pay, Diners, Discover, Google Pay, Mastercard, PayPal,
+Shop Pay, Visa), and a legal-links row (Privacy Policy, Cookie Policy,
+Acceptable Use Policy, Terms of Service, Returns page).
+
+**Persistent lead-capture popup:** small "Get 10% Off" tab, bottom-left
+corner, dismissible with an X — present across every page, not just the
+homepage. Worth noting since the app's own post-game newsletter capture
+is a different UI pattern (full-screen branded moment vs. this site's
+low-key persistent corner tab) — that's a deliberate app improvement, not
+a mismatch to fix.
+
+**Note:** "Scorepads" appears as its own footer link under "Rules and
+Things" — meaning the site already sends traffic to a scorepad-related
+page. Worth checking that page before the pitch; it may be exactly where
+an app like this would get linked from.
+
 ## Imagery style
 
 - Photography: real, candid-looking multi-generational families genuinely
@@ -116,10 +189,15 @@ star-review counts) over technical claims.
 
 ## Open follow-ups
 
-- [ ] Add the six screenshots (hero, trust badges, product grid, feature
-      block, "Play Together" section, footer)
+- [x] Six screenshots reviewed (hero, trust badges, product grid, feature
+      block, Instagram strip, footer) — details captured above; actual
+      image files not committed (arrived as chat images, not files)
+- [ ] Grab the "Play Together, Stay Together" dark-teal testimonial
+      section specifically — described in the original analysis but never
+      actually screenshotted
+- [ ] Check the site's existing `/Scorepads` footer link — may be the
+      natural place this app eventually gets linked from
 - [ ] Side-by-side check of app teal/cream hex values against the site
-      once screenshots are in
 - [ ] Consider checking a subpage (product page template, blog) for
       additional style notes
 - [ ] Decide whether to drop the unused Fraunces font import from

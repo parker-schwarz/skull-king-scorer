@@ -189,15 +189,65 @@ star-review counts) over technical claims.
 
 ## The scorepads page — direct pitch evidence
 
-`https://www.grandpabecksgames.com/pages/scorepads` — Parker's identified
-this as the strongest evidence for the pitch: it's a page of literal
-paper score sheets, one per game, for players to print or order more of
-when they run out. This is the exact gap the app fills.
+`https://www.grandpabecksgames.com/pages/scorepads` — confirmed via
+screenshots. This is the single strongest piece of evidence for the
+pitch: the site's current answer to "how do I score this game" is a
+downloadable PDF you print and fill in by hand.
 
-Pending: full page content (what's listed, PDF vs. printable vs.
-physical, pricing, layout) — can't be fetched directly from this
-environment (network policy blocks the domain). Paste in page content or
-a screenshot to fill this in.
+**Page structure:** one section per game, each showing the relevant box
+art thumbnail(s) with a red "Score Sheets" link underneath that downloads
+a printable PDF.
+
+- **Antiquity Quest** — base game + expansion box art, each with its own
+  "Score Sheets" link
+- **Skull King** — base game + Legendary Expansion box art, each with its
+  own "Score Sheets" link
+- **Another Man's Treasure** — two separate downloads: "Classic Game
+  Score Sheet" and "Progressive Game Score Sheet"
+
+So at minimum 4+ distinct PDFs live behind this one page.
+
+**What the sheets actually require of the player** (this is the pitch):
+
+- *Antiquity Quest sheet* — a grid with First/Second/Third Round rows,
+  each split into Bonus Points / Collection Points / Card Points / Round
+  Score, plus a Grand Total row. A footnote instructs the player to
+  "consult rule book for complete scoring instructions" for the 500-point
+  bonus — i.e., the sheet doesn't compute anything, it just holds numbers
+  the player calculated by hand. The app already automates this bonus,
+  including the pass-along rule.
+- *Skull King pad* — a themed but still fully manual grid: numbered rows
+  1–10 (rounds) with blank cells per player, no bid/trick math done for
+  you.
+- *AMT "Classic Game Patterns" sheet* — the clearest example. It's a
+  printed lookup table of the 5 scoring patterns and their point values
+  ("2 Sets of 4," "2 Suited Runs of 4," "1 Suited Run of 4 + 1 Set of 4,"
+  "1 Suited Run of 8," "4 Suited Pairs"), repeated 4× on one page so it
+  can be cut into 4 separate score cards, plus a handwritten-style
+  footnote explaining the suited-color-matching rule. The player has to
+  manually track which patterns they've already used. The app's
+  "used patterns grey themselves out" feature replaces this table and the
+  manual tracking entirely.
+
+**Pitch framing this supports directly:** the app isn't competing with an
+imagined future product — it's replacing a process that already visibly
+frustrates the company enough that they built and host printable
+replacement sheets. "Out of score sheets? Print more" (per `PITCH.md`) is
+literally this page.
+
+**The sharper version of the pitch (Parker's framing, more precise than
+"does math paper can't"):** every one of these PDFs still has the same
+structural bottleneck — one person at the table has to be the
+scorekeeper, filling in everyone's numbers by hand on a single sheet.
+The app's actual advantage isn't just automated math, it's that the
+bottleneck disappears: each player scores their own card, on their own
+phone, live, with no single person responsible for the group's sheet.
+That's the "options and convenience" pitch. And because scoring now
+happens through the app instead of a pencil, the moment the game ends is
+also a marketing moment — the newsletter capture screen — which a paper
+sheet structurally cannot offer. Lead with *distributed scoring +
+convenience*, with *automated math* and *the marketing touchpoint* as
+supporting points underneath it, not the headline.
 
 ## Open follow-ups
 
@@ -208,9 +258,10 @@ a screenshot to fill this in.
 - [ ] Grab the "Play Together, Stay Together" dark-teal testimonial
       section specifically — described in the original analysis but never
       actually screenshotted (low priority, not blocking)
-- [ ] Document `/pages/scorepads` (see new section below) — this is the
-      direct evidence for the pitch angle (paper score pads → this app),
-      worth fully capturing once Parker can share the page content
+- [x] Document `/pages/scorepads` — confirmed via screenshots, see
+      section above; sharpened the core pitch angle to "distributed
+      scoring removes the single-scorekeeper bottleneck," not just
+      "automated math"
 - [ ] Side-by-side check of app teal/cream hex values against the site
 - [ ] Consider checking a subpage (product page template, blog) for
       additional style notes

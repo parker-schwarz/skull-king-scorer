@@ -2,13 +2,33 @@
 
 A free companion app for the three Grandpa Beck's games that use score pads:
 Skull King, Antiquity Quest, and Another Man's Treasure. One link, no app
-store, works on any phone. Open `scorepad.html` on any device to try it.
+store, works on any phone. Open `index.html` on any device to try it.
+
+## Two pitches, not one
+
+**1. Convenience — no one has to be the scorekeeper.** Every one of these
+games currently ships with a printable PDF score sheet
+(grandpabecksgames.com/pages/scorepads), and every sheet has the same
+structural bottleneck: one person at the table fills in everyone's numbers
+by hand. This app removes that job — each player scores their own card, on
+their own phone, and the app enforces rules paper can't so the numbers
+come out right. It also answers the question that comes up after almost
+every round — "wait, who's winning?" — instantly, for everyone, via the
+live standings, instead of someone doing table math out loud.
+
+**2. A real marketing touchpoint, not a hypothetical one.** The winner
+screen after every game reaches the table at the exact moment they're
+happy and can be introduced to Grandpa Beck's other games. This isn't
+speculative — building this app was the first time I personally realized
+how many games Grandpa Beck's actually makes. That's a real gap in
+awareness the app can close, not just an email-capture gimmick bolted on
+for the pitch.
 
 ## The pitch in one line
 
-Paper score pads get used up and thrown away. This one is permanent, does
-math the pads can't, and ends every game night on a Grandpa Beck's branded
-screen that grows the email list.
+Paper score pads mean someone always has to be the scorekeeper. This app
+removes that job, answers "who's winning" instantly, and ends every game
+night on a Grandpa Beck's branded screen that grows the email list.
 
 ## What it does
 

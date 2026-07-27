@@ -7,7 +7,7 @@ Pairs with `PITCH.md` (internal pitch reasoning), `PITCH_LETTER.md`
 anything client-facing on-brand) — this file is the honest internal read
 on where things actually stand.
 
-Last updated: 2026-07-25
+Last updated: 2026-07-27
 
 ## Where it lives
 
@@ -72,6 +72,42 @@ See `PITCH.md` for the full sell. See commit history for the build order.
   public site, not source files from Grandpa Beck's design team.
 - **No QR code / deep link into the app from a physical product** yet.
 
+## Ongoing costs — the actual numbers
+
+Came up in a planning conversation, not written down at the time (that's
+why it wasn't findable in this repo) — captured here now with real
+figures, not just "free tier, effectively zero."
+
+**Dollar cost (infra):**
+- GitHub Pages serves only `index.html` (287KB) — React/Babel/Firebase
+  SDKs load from `unpkg`/`gstatic` CDNs, and box art is hotlinked from
+  grandpabecksgames.com itself, so this repo's Pages bandwidth barely
+  moves per visit. Free soft limit is 100GB/month → roughly 350,000 page
+  loads/month before it's even a conversation.
+- Firebase Realtime Database Spark (free) plan: 1GB stored, 10GB/month
+  downloaded. A full game session's live-sync traffic is a few hundred KB
+  at most → thousands of full games/month before touching the free tier.
+- If usage somehow blew past both: Blaze (pay-as-you-go) keeps the same
+  free allowance, then bills $5/GB stored, $1/GB downloaded beyond it.
+  Even a genuine-hit scenario likely lands in single-digit dollars/month.
+- **The honest pitch line:** there's no dollar figure worth putting a
+  number on. Free tier covers any traffic level this could realistically
+  hit; even wild success costs a few dollars a month.
+
+**Private-repo cost, if that ever comes up:** GitHub Pages on the free
+plan requires a public repo; a private one needs GitHub Pro ($4/mo).
+Not worth paying, though — this is a single-file client-side app, so the
+full source is downloaded to any visitor's browser regardless of whether
+the *repo* is public (View Source shows everything either way). A private
+repo only stops casual GitHub browsing, not real copying. The actual fix,
+if this gets adopted, is moving the repo into Grandpa Beck's own GitHub
+org — which the maintenance-ownership question below already points at
+anyway.
+
+**Time cost (the real one):** not a $ figure — see "who maintains this"
+below. Static file + free-tier serverless means no server to patch or
+babysit; the open cost is bug-fix/feature-request time, not uptime.
+
 ## Open decision: native app vs. web link
 
 **Resolved for now: web link only, not a native app.** Reasoning: a
@@ -112,6 +148,27 @@ Options to raise with Grandpa Beck's team rather than resolve solo:
 - [ ] Final read-through of `PITCH_LETTER.md` before sending — check tone,
       length, and the "not affiliated" disclosure line
 - [ ] Schedule time with Grandpa Beck / send `PITCH_LETTER.md`
+
+## Resume — open items for next session
+
+Nothing below is decided; parking lot for the next working session.
+
+- **Play stats claim, double-check.** Confirmed via code search: no
+  stats/analytics tracking is built into `index.html` today. `PITCH_LETTER.md`
+  already frames it correctly as a future step ("Where this could go from
+  here"), not a built feature — just needs one more read-through before
+  sending to make sure nothing elsewhere implies it's live now.
+- **QR code demo card — feasibility, not yet scoped.** Two different asks,
+  worth separating: (1) a literal QR code linking to the live app — trivial,
+  any free generator, minutes of work; (2) a designed mockup card/box-insert
+  showing what it'd look like on physical product for the pitch itself —
+  a real small design task, needs either real Grandpa Beck's brand assets
+  or close approximations. Decide whether either is worth doing before the
+  pitch, and if so, which.
+- **Ongoing-cost breakdown** — now written up above with real numbers
+  (previously only discussed verbally, which is why it wasn't in the repo).
+  Review for anything to fold into `PITCH_LETTER.md` if Grandpa Beck's team
+  is likely to ask about running costs directly.
 
 ## Bottom line
 

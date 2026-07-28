@@ -16,5 +16,7 @@ static file (`index.html`), no install, no build step.
 
 ## Workflow
 
-This is a solo working repo — no PR review flow. Always push directly to
-`main` after making updates; don't leave work stranded on a feature branch.
+This is a solo working repo — no PR review flow. All work goes straight to
+`main`: commit and push directly to `main`, every session, every update.
+Don't open feature branches or PRs for changes here, and don't leave work
+stranded on a branch other than `main`.

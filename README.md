@@ -10,6 +10,8 @@ static file (`index.html`), no install, no build step.
 
 - `PITCH.md` — internal pitch reasoning, open questions, "if he bites" notes
 - `PITCH_LETTER.md` — the send-ready version addressed to Grandpa Beck's team
+- `OFFER.md` — the client-facing offer: scope of work, pricing, ownership
+  transfer, support boundaries, and what's out of scope
 - `PROGRESS.md` — living status doc: what's built, what's not, open decisions,
   and a running list of items to pick up next session
 - `BRAND_STYLE_GUIDE.md` — Grandpa Beck's site palette/type/voice reference

@@ -2,12 +2,13 @@
 
 Living status doc. Update this as things change; don't let it go stale.
 Pairs with `PITCH.md` (internal pitch reasoning), `PITCH_LETTER.md`
-(the send-ready version addressed to Grandpa Beck's team), and
-`BRAND_STYLE_GUIDE.md` (their site's palette/type/voice, for keeping
+(the send-ready version addressed to Grandpa Beck's team), `OFFER.md`
+(the client-facing offer: scope, price, ownership, support boundaries),
+and `BRAND_STYLE_GUIDE.md` (their site's palette/type/voice, for keeping
 anything client-facing on-brand) — this file is the honest internal read
 on where things actually stand.
 
-Last updated: 2026-07-27
+Last updated: 2026-08-01
 
 ## Where it lives
 
@@ -56,6 +57,13 @@ See `PITCH.md` for the full sell. See commit history for the build order.
   with contact info instead of internal next-step notes. `PITCH.md`
   stays the internal-reasoning version — open questions, personal notes,
   "if he bites" framing — and should never be the one actually sent.
+- `OFFER.md` — the client-facing offer doc, companion to
+  `PITCH_LETTER.md`. The letter sells why this is worth having; the offer
+  spells out what's being bought, the three phases of work, what's
+  explicitly out of scope, priced add-ons, real ongoing-cost numbers,
+  pricing and payment terms, timeline, what's needed from their side, and
+  where Parker's involvement ends. Also carries the "app stays free to
+  players" and "built independently, your IP stays yours" framing.
 - Both pitch docs have styled HTML previews (Claude Artifacts, private
   until shared) matching Grandpa Beck's brand palette for an easy
   read-through before sending anything for real.
@@ -119,19 +127,32 @@ a manageable question into a hard dependency on ongoing native dev work.
 Revisit only if Grandpa Beck's team specifically wants store presence for
 reasons beyond scoring (e.g. cross-promotion with other apps they own).
 
-## Open question: who maintains this after the pitch
+## Resolved: who maintains this after the pitch
 
-This is the real blocker right now, not the app itself. Hosting and
-uptime are close to solved by the architecture (static file + Firebase
-free tier), but ongoing bug fixes / feature requests are a genuine open
-question — Parker's background is accounting, not dev/ops, and isn't
-signing up to be indefinite on-call support for a production tool.
-Options to raise with Grandpa Beck's team rather than resolve solo:
-- Parker maintains it informally as long as it stays small/low-traffic
-- Grandpa Beck's company brings in a contractor to own it if/when it's
-  proven — the codebase is intentionally simple (one HTML file, no build
-  pipeline) specifically so that handoff is cheap
-- Scope is capped explicitly at "scorepad," not open-ended feature requests
+Was the real blocker; now answered and written down in `OFFER.md`. The
+decisions, for the record:
+
+- **Commercial posture: paid from the start.** Not a gift, not free
+  labor. A proper priced engagement with a fee for the build plus an
+  hourly rate afterward.
+- **Ownership: transfers to Grandpa Beck's Games.** Repo moves into their
+  GitHub org, the live URL and the Firebase project become theirs, and
+  copyright transfers on final payment. They inherit no dependency on
+  Parker's accounts.
+- **Support: bounded transition, then handoff.** 90 days of bug fixes
+  from launch, then maintenance is fully theirs. $125/hr afterward if
+  they want Parker, no retainer and no minimum. The codebase is
+  deliberately simple (one HTML file, no build pipeline) so a contractor
+  handoff is cheap.
+- Scope is capped explicitly at "scorepad," with out-of-scope items and
+  priced add-ons both listed in `OFFER.md` so nothing is fuzzy later.
+
+Pricing as drafted: $5,000 for the completed app plus IP transfer,
+$2,500 for production readiness, $1,500 for docs/handoff/90-day support.
+$9,000 total, 50% on signing and 50% on handoff. **These numbers are a
+first pass, not researched against comparable freelance rates or against
+what a family board-game company of this size actually spends.** Worth a
+sanity check before sending.
 
 ## Path to pitch-ready
 
@@ -139,9 +160,17 @@ Options to raise with Grandpa Beck's team rather than resolve solo:
       `BRAND_STYLE_GUIDE.md`) — done and on-brand
 - [ ] Run a full real game night on it (this is the next concrete step)
 - [ ] Fix whatever the real game night surfaces
-- [ ] Decide + write down the maintenance-ownership answer above before
-      the pitch conversation, even if the answer is "let's figure it out
-      together"
+- [x] Decide + write down the maintenance-ownership answer — done, see
+      "Resolved: who maintains this" above and `OFFER.md`
+- [ ] **Reconcile `PITCH_LETTER.md` with a paid offer.** The letter still
+      opens with "a *free* companion app" and "not a vendor sales pitch,"
+      written back when this was going to be a giveaway. "Free" is still
+      true of the app for players, and `OFFER.md` says so explicitly, but
+      the letter's framing will read strangely arriving next to a $9,000
+      proposal. Decide whether to soften those lines or to send the letter
+      first and the offer only if there's interest.
+- [ ] Sanity-check the pricing in `OFFER.md` against real freelance rates
+      and what a company this size plausibly spends
 - [ ] (Optional, not blocking) Wire newsletter capture to a real ESP if
       there's time — otherwise pitch it as "one-day change" per
       `PITCH_LETTER.md`
